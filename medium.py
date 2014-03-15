@@ -24,7 +24,7 @@ class LocalMedium:
         self.messages.append(message)
 
     def add_endpoints(self, endpoints):
-        """must only be called by test code"""
+        """shall only be called by test code"""
         self.endpoints.extend(endpoints)
 
     def send_to_all(self, source_address, message_content):
@@ -36,11 +36,10 @@ class LocalMedium:
 
     def address_of(self, endpoint):
         """for endpoints => the address identifier for an endpoint"""
-##        return endpoint
         return self.endpoints.index(endpoint)
 
     def deliver_all_from(self, endpoint):
-        """must only be called by test code"""
+        """shall only be called by test code"""
         source_address = self.address_of(endpoint)
         for message in self.messages:
             if message.source == source_address:
@@ -49,7 +48,7 @@ class LocalMedium:
                         endpoint.receive(message)
         
     def deliver_all_to(self, endpoint):
-        """must only be called by test code"""
+        """shall only be called by test code"""
         source_address = self.address_of(endpoint)
         for message in self.messages:
             if self.address_of(endpoint) == message.destination:
