@@ -10,14 +10,11 @@ mock1 = mock2 = mock
 
 class TestInstance:
 
-    log = paxos = medium = mock
+    message = paxos = medium = mock
 
     @fixture()
-    def instance(self, paxos, medium, log):
+    def instance(self, paxos, medium):
         return Instance(paxos.name, medium)
-
-    instance1 = instance
-    instance2 = instance
 
 class TestBallotNumber(TestInstance):
 
@@ -45,9 +42,10 @@ class TestStep_1(TestInstance):
 
     def test_send_next_ballot(self, instance, medium, mock):
         instance.propose("ballot")
-        assert medium.send_to_quorum.called
-        next_ballot = medium.send_to_quorum.call_args[0][0]
-        assert next_ballot.ballot_number == instance.last_sent_ballot_number
+        assert medium.send_to_majority.called
+        next_ballot = medium.send_to_majority.call_args[0][0]
+        assert next_ballot.ballot_number == instance.current_ballot_number
+        assert instance.current_proposal == "ballot"
 
     class TestNextBallot:
         @fixture
@@ -67,12 +65,21 @@ class TestStep_2(TestInstance):
         null vote `null(q)` if q did not vote in any ballot numbered less
         than b.
     """
-    next_ballot = message = mock
-
-    def test_receive_next_ballot(self, instance, next_ballot, message):
-        message.content = next_ballot
+    @fixture()
+    def next_ballot(self):
+        next_ballot = Mock()
         next_ballot.ballot_number = BallotNumber(2, "test")
+        return next_ballot
+    message = mock
+
+    def test_receive_next_ballot(self, instance, next_ballot, message, mock):
+        instance.send_last_vote = mock
+        message.content = next_ballot
         instance.receive_next_ballot(next_ballot, message)
+        assert instance.send_last_vote.called
+
+    def test_send_last_vote(self, instance, next_ballot, message):
+        instance.send_last_vote(next_ballot, message)
         assert message.reply.called
         reply = message.reply.call_args[0][0]
         assert reply.ballot_number == next_ballot.ballot_number
@@ -89,8 +96,42 @@ class TestStep_3(TestInstance):
         a `BeginBallot(b, d)` message to every priest in Q.
     """
 
-    def test_send_no_begin_ballot(self, instance):
-        fail()
+    @fixture()
+    def last_vote(self):
+        last_vote = Mock()
+        last_vote.ballot_number = BallotNumber(2, "test")
+        return last_vote
+
+    def test_find_no_majority_for_ballot(self, instance, medium, message,
+                                         last_vote):
+        medium.is_majority.return_value = False
+        message.content = last_vote
+        instance.receive_last_vote(last_vote, message)
+        assert medium.is_majority.called
+        assert not message.reply.called
+        
+    def test_find_majority_for_ballot(self, instance, medium, message, last_vote, mock):
+        instance.send_begin_ballot = mock
+        medium.is_majority.return_value = True
+        message.content = last_vote
+        instance.receive_last_vote(last_vote, message)
+        assert medium.is_majority.called
+        assert instance.send_begin_ballot.called
+        assert instance.current_proposal == last_vote.proposal
+
+    def test_current_proposal_is_different(self, instance, last_vote):
+        assert last_vote.proposal != instance.current_proposal
+
+    def send_begin_ballot(self, instance, medium, message, last_vote, mock):
+        instance.current_proposal = "the proposal"
+        instance.send_begin_ballot(last_vote, message)
+        assert message.reply.called
+        begin_ballot = message.reply.call_args[0][0]
+        assert begin_ballot.ballot_number == last_vote.ballot_number
+        assert begin_ballot.proposal == "the proposal"
+
+    def test_send_begin_ballot_for_many_instances(self):
+        self.fail("todo somewhere")
         
         
 class TestStep_4(TestInstance):

@@ -41,7 +41,7 @@ class Instance:
     def propose(self, value):
         self.last_sent_ballot_number = self.next_ballot_number()
         next_ballot = NextBallot(self.last_sent_ballot_number)
-        self.medium.send_to_quorum(next_ballot)
+        self.medium.send_to_majority(next_ballot)
 
     def receive_next_ballot(self, next_ballot, message):
         message.reply(LastVote(next_ballot.ballot_number, self.last_vote))
