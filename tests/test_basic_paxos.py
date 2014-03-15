@@ -1,6 +1,7 @@
 from pytest import *
 from unittest.mock import Mock
 from pypaxos.medium import *
+from pypaxos.paxos import *
 
 
 class TestInstance:
@@ -25,4 +26,5 @@ class TestInstance:
         proposal_number = (5, "hagsdfagskjhfga")
         greater_proposal_number = instance.greater_proposal_number(proposal_number)
         assert greater_proposal_number[0] > proposal_number[0]
+        assert greater_proposal_number[1] == instance.name
 
