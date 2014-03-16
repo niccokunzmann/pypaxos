@@ -1,3 +1,14 @@
+"""
+
+Quotes are from The Part-Time Parliament by Leslie Lamport.
+    ACM Transactions on Computer Systems 16, 2 (May 1998), 133-169.
+    Also appeared as SRC Research Report 49.
+    http://research.microsoft.com/en-us/um/people/lamport/pubs/pubs.html#lamport-paxos
+    http://research.microsoft.com/en-us/um/people/lamport/pubs/lamport-paxos.pdf
+    
+
+"""
+
 from pytest import *
 from unittest.mock import Mock
 from pypaxos.medium import *
@@ -241,8 +252,81 @@ class TestStep_3(TestInstance):
             assert instance.current_proposal == voted2.proposal
             assert not instance.proposal_is_accpeted
 
-    def test_send_begin_ballot_for_many_instances(self):
-        fail("todo somewhere")
+    quorum = mock
+
+    def test_ignore_incoming_last_vote_with_differing_ballot_number(
+        self, instance, message, last_vote, quorum):
+        """A LastVote comes in but we already have a different ballot number.
+        Then we ignore the incoming LastVote because it does not belong to the
+        quorum."""
+        instance.current_quorum = quorum
+        instance.current_ballot_number = BallotNumber(1, "test")
+        message.content = last_vote
+        instance.receive_last_vote(last_vote, message)
+        assert not quorum.add_success.called
+
+    class TestLastVote:
+        @fixture()
+        def last_vote(self):
+            return LastVote(BallotNumber(1, "trallala"), Mock())
+
+        def test_sent_to(self, last_vote, mock):
+            last_vote.sent_to(mock, 5)
+            mock.receive_last_vote.assert_called_with(last_vote, 5)
+
+    class TestSendBeginBallot(InstanceTest):
+        """ page 12
+        Receiving multiple copies of a message can cause an action to be
+        repeated. Except in step (3), performing the action a second time
+        has no effect. For example, sending several `Voted(b, q)` messages
+        in step (4) has the sme effect as sending just one. The repetition
+        of step (3) is prevented by using the entry made in the back of his
+        ledger when it is executed. Thus, the consistency condition is
+        maintained, even if the same messenger delivers the same message
+        several times.
+        """
+        @fixture()
+        def ballot_number(self):
+            return BallotNumber(3, "trallala")
+        
+        @fixture()
+        def quorum(self):
+            quorum = Mock()
+            quorum.is_complete.return_value = True
+            return quorum
+
+        @fixture()
+        def paxos(self, ballot_number):
+            paxos = Mock()
+            def log(ballot_number):
+                # Todo: test logs that they return True and false for
+                #       log_begin_ballot
+                assert ballot_number == ballot_number
+                assert not quorum.send_to_quorum.called
+                return paxos.ballot_has_been_initiated_before
+            paxos.log_begin_ballot.side_effect = log
+            return paxos
+
+        @fixture()
+        def instance(self, paxos, medium, quorum, proposal, ballot_number):
+            instance = InstanceTest.instance(paxos, medium)
+            instance.current_quorum = quorum
+            instance.current_proposal = proposal
+            instance.current_ballot_number = ballot_number
+            return instance
+    
+        def test_ballot_has_not_been_initiated(self, instance, quorum, paxos):
+            paxos.ballot_has_been_initiated_before = False
+            instance.send_begin_ballot()
+            assert paxos.log_begin_ballot.called
+            assert quorum.send_to_quorum.called
+            assert quorum.send_to_quorum.return_value == intance.current_voting_quorum
+
+        def test_ballot_has_been_initiated_before(self):
+            paxos.ballot_has_been_initiated_before = True
+            instance.send_begin_ballot()
+            assert paxos.log_begin_ballot.called
+            assert not quorum.send_to_quorum.called
 
     def test_send_begin_ballot_if_proposal_number_is_increased(self):
         # the same as quorum does not complete

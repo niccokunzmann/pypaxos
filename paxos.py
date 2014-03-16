@@ -24,6 +24,9 @@ class LastVote:
         self.ballot_number = ballot_number
         self.last_vote = last_vote
 
+    def sent_to(self, instance, *args):
+        instance.receive_last_vote(self, *args)
+
 class Instance:
     
     def __init__(self, name, medium):
@@ -60,11 +63,13 @@ class Instance:
         message.reply(LastVote(ballot_number, self.last_vote))
 
     def receive_last_vote(self, last_vote, message):
-        self.current_quorum.add_success(message)
+        if last_vote.ballot_number == self.current_ballot_number:
+            self.current_quorum.add_success(message)
         self.update_proposal(last_vote.last_vote)
         complete = self.current_quorum.is_complete()
         if complete and not self.current_quorum.can_complete():
-            raise ValueError("The quorum is complete but can not complete. Fix your code!.")
+            raise ValueError("The quorum {} is complete but can not complete."
+                             "Fix your code, dude!".format(self.current_quorum))
         if complete:
             self.send_begin_ballot()
 
