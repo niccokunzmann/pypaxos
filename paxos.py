@@ -52,7 +52,7 @@ class Instance:
     def greater_ballot_number(self, ballot_number):
         if self.last_ballot_number > ballot_number:
             ballot_number = self.last_ballot_number
-        self.last_ballot_number = ballot_number[0] + 1, self.name
+        self.last_ballot_number = BallotNumber(ballot_number[0] + 1, self.name)
         return self.last_ballot_number
 
     def propose(self, value):
@@ -69,7 +69,10 @@ class Instance:
         self.send_last_vote(next_ballot.ballot_number, message)
 
     def send_last_vote(self, ballot_number, message):
-        message.reply(LastVote(ballot_number, self.last_vote))
+        message.reply(self.create_last_vote(ballot_number))
+
+    def create_last_vote(self, ballot_number):
+        return LastVote(ballot_number, self.last_vote)
 
     def receive_last_vote(self, last_vote, message):
         if last_vote.ballot_number == self.current_ballot_number:

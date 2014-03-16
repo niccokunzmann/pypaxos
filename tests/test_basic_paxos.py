@@ -103,9 +103,12 @@ class TestStep_2(TestInstance):
     q must record the necessairy information in his ledger.)
     """
     @fixture()
-    def next_ballot(self):
+    def ballot_number(self):
+        return BallotNumber(2, "test")
+    @fixture()
+    def next_ballot(self, ballot_number):
         next_ballot = Mock()
-        next_ballot.ballot_number = BallotNumber(2, "test")
+        next_ballot.ballot_number = ballot_number
         return next_ballot
     message = mock
 
@@ -115,13 +118,16 @@ class TestStep_2(TestInstance):
         instance.receive_next_ballot(next_ballot, message)
         assert instance.send_last_vote.called
 
-    def test_send_last_vote(self, instance, next_ballot, message):
+    def test_send_last_vote(self, instance, next_ballot, message, mock):
+        instance.create_last_vote = mock
         instance.send_last_vote(next_ballot.ballot_number, message)
-        assert message.reply.called
-        reply = message.reply.call_args[0][0]
-        assert reply.ballot_number == next_ballot.ballot_number
-        assert reply.last_vote.ballot_number < reply.ballot_number
-        assert reply.last_vote == instance.last_vote
+        message.reply.assert_called_with(mock.return_value)
+
+    def test_create_last_vote(self, instance, ballot_number):
+        last_vote = instance.create_last_vote(ballot_number)
+        assert last_vote.ballot_number == ballot_number
+        assert last_vote.last_vote.ballot_number < last_vote.ballot_number
+        assert last_vote.last_vote == instance.last_vote
 
     def test_violate_promise(self):
         fail("todo")
