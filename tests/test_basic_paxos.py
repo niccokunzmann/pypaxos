@@ -64,13 +64,20 @@ class TestStep_1(TestInstance):
         to message to some set of priests.
     """
 
-    def test_send_next_ballot(self, instance, medium, mock):
-        instance.propose("ballot")
+    proposal = mock
+
+    def test_send_next_ballot(self, instance, medium, mock, proposal):
+        instance.create_next_ballot = mock
+        instance.propose(proposal)
         assert medium.send_to_quorum.called
-        next_ballot = medium.send_to_quorum.call_args[0][0]
-        assert next_ballot.ballot_number == instance.current_ballot_number
-        assert instance.current_proposal == "ballot"
+        assert mock.called
+        medium.send_to_quorum.assert_called_with(mock.return_value)
         assert instance.current_quorum == medium.send_to_quorum.return_value
+        assert instance.current_proposal == proposal
+
+    def test_create_next_ballot(self, instance):
+        next_ballot = instance.create_next_ballot()
+        assert next_ballot.ballot_number == instance.current_ballot_number
 
     class TestNextBallot:
         @fixture
@@ -89,6 +96,11 @@ class TestStep_2(TestInstance):
         with the largest ballot number less than b that q has cast, or his
         null vote `null(q)` if q did not vote in any ballot numbered less
         than b.
+
+    To keep `MaxVote(b q, B)` from changing, q must cast no new votes with
+    ballot numbers between v_bal and b. By sending the `LastVote(b, v)`
+    message, q is promising not to cast any such vote. (To keep this promise,
+    q must record the necessairy information in his ledger.)
     """
     @fixture()
     def next_ballot(self):
@@ -110,6 +122,15 @@ class TestStep_2(TestInstance):
         assert reply.ballot_number == next_ballot.ballot_number
         assert reply.last_vote.ballot_number < reply.ballot_number
         assert reply.last_vote == instance.last_vote
+
+    def test_violate_promise(self):
+        fail("todo")
+
+    def test_log_the_value(self):
+        fail("todo")
+
+    def test_rely_on_logs(self):
+        fail("todo")
         
 class TestStep_3(TestInstance):
     """ page 11
@@ -342,10 +363,10 @@ class TestStep_3(TestInstance):
     def test_send_begin_ballot_if_proposal_number_is_increased(self):
         # the same as quorum does not complete
         # see test_quorum_can_not_complete
-        fail("todo somewhere")
+        fail("todo")
 
     def test_reaction_when_it_is_clear_that_there_will_be_no_majority(self):
-        fail("todo somewhere")
+        fail("todo")
         
         
 class TestStep_4(TestInstance):

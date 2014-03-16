@@ -56,10 +56,13 @@ class Instance:
         return self.last_ballot_number
 
     def propose(self, value):
-        self.current_ballot_number = self.next_ballot_number()
         self.current_proposal = value
-        next_ballot = NextBallot(self.current_ballot_number)
+        next_ballot = self.create_next_ballot(value)
         self.current_quorum = self.medium.send_to_quorum(next_ballot)
+
+    def create_next_ballot(self):
+        self.current_ballot_number = self.next_ballot_number()
+        return NextBallot(self.current_ballot_number)
 
     def receive_next_ballot(self, next_ballot, message):
         # todo: violate promise
