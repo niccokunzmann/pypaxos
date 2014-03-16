@@ -18,15 +18,28 @@ class TestInstance:
 
 class TestBallotNumber(TestInstance):
 
-    def test(self, instance):
+    def test_ballot_number_is_natural_number(self, instance):
         ballot_number = instance.next_ballot_number()
         assert ballot_number == (1, instance.name)
+
+    def test_ballot_number_increases(self, instance):
+        ballot_number1 = instance.next_ballot_number()
+        ballot_number2 = instance.next_ballot_number()
+        assert ballot_number1 < ballot_number2
 
     def test_greater(self, instance):
         ballot_number = (5, "hagsdfagskjhfga")
         greater_ballot_number = instance.greater_ballot_number(ballot_number)
         assert greater_ballot_number[0] > ballot_number[0]
         assert greater_ballot_number[1] == instance.name
+
+    def test_greater_ballot_number_is_greater_than_all_known_ballot_numbers(
+        self, instance):
+        null_ballot_number = NullVote().ballot_number
+        greater_ballot_number = instance.greater_ballot_number(null_ballot_number)
+        greater_ballot_number2 = instance.greater_ballot_number(null_ballot_number)
+        assert greater_ballot_number2 > greater_ballot_number
+        
 
 class TestInstanceAttributes(TestInstance):
 

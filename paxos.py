@@ -35,12 +35,16 @@ class Instance:
         self.current_proposal = None
         self.current_proposals_greatest_ballot_number = None
         self.proposal_is_accpeted = True
+        self.last_ballot_number = self.last_vote.ballot_number
         
     def next_ballot_number(self):
-        return (1, self.name)
+        return self.greater_ballot_number(self.last_ballot_number)
 
     def greater_ballot_number(self, ballot_number):
-        return ballot_number[0] + 1, self.name
+        if self.last_ballot_number > ballot_number:
+            ballot_number = self.last_ballot_number
+        self.last_ballot_number = ballot_number[0] + 1, self.name
+        return self.last_ballot_number
 
     def propose(self, value):
         self.current_ballot_number = self.next_ballot_number()
@@ -49,6 +53,7 @@ class Instance:
         self.current_quorum = self.medium.send_to_quorum(next_ballot)
 
     def receive_next_ballot(self, next_ballot, message):
+        # todo: violate promise
         self.send_last_vote(next_ballot.ballot_number, message)
 
     def send_last_vote(self, ballot_number, message):
