@@ -27,10 +27,16 @@ class LastVote:
     def sent_to(self, instance, *args):
         instance.receive_last_vote(self, *args)
 
+class BeginBallot:
+    def __init__(self, ballot_number, value):
+        self.ballot_number = ballot_number
+        self.value = value
+
 class Instance:
     
-    def __init__(self, name, medium):
-        self.name = name
+    def __init__(self, paxos, medium):
+        self.paxos = paxos
+        self.name = paxos.name
         self.medium = medium
         self.last_vote = NullVote()
         self.current_ballot_number = None
@@ -73,9 +79,6 @@ class Instance:
         if complete:
             self.send_begin_ballot()
 
-    def send_begin_ballot(self):
-        assert self.current_quorum.is_complete()
-
     def update_proposal(self, voted):
         if not voted.is_null_vote():
             if self.current_proposals_greatest_ballot_number is None or \
@@ -83,3 +86,15 @@ class Instance:
                 self.current_proposal = voted.proposal
                 self.current_proposals_greatest_ballot_number = voted.ballot_number
                 self.proposal_is_accpeted = False
+
+    def create_begin_ballot(self):
+        return BeginBallot(self.current_ballot_number,
+                           self.current_proposal)
+
+    def send_begin_ballot(self):
+        assert self.current_quorum.is_complete()
+        if not self.paxos.log_begin_ballot(self, self.current_ballot_number):
+            begin_ballot = self.create_begin_ballot()
+            voting_quorum = self.current_quorum.send_to_quorum(begin_ballot)
+            self.current_voting_quorum = voting_quorum
+

@@ -25,7 +25,7 @@ class TestInstance:
 
     @fixture()
     def instance(self, paxos, medium):
-        return Instance(paxos.name, medium)
+        return Instance(paxos, medium)
 
 class TestBallotNumber(TestInstance):
 
@@ -274,7 +274,7 @@ class TestStep_3(TestInstance):
             last_vote.sent_to(mock, 5)
             mock.receive_last_vote.assert_called_with(last_vote, 5)
 
-    class TestSendBeginBallot(InstanceTest):
+    class TestSendBeginBallot(TestInstance):
         """ page 12
         Receiving multiple copies of a message can cause an action to be
         repeated. Except in step (3), performing the action a second time
@@ -285,6 +285,8 @@ class TestStep_3(TestInstance):
         maintained, even if the same messenger delivers the same message
         several times.
         """
+        proposal = mock
+        
         @fixture()
         def ballot_number(self):
             return BallotNumber(3, "trallala")
@@ -296,12 +298,11 @@ class TestStep_3(TestInstance):
             return quorum
 
         @fixture()
-        def paxos(self, ballot_number):
+        def paxos(self, ballot_number, quorum):
             paxos = Mock()
-            def log(ballot_number):
+            def log(*args):
                 # Todo: test logs that they return True and false for
                 #       log_begin_ballot
-                assert ballot_number == ballot_number
                 assert not quorum.send_to_quorum.called
                 return paxos.ballot_has_been_initiated_before
             paxos.log_begin_ballot.side_effect = log
@@ -309,20 +310,30 @@ class TestStep_3(TestInstance):
 
         @fixture()
         def instance(self, paxos, medium, quorum, proposal, ballot_number):
-            instance = InstanceTest.instance(paxos, medium)
+            instance = TestInstance.instance(self, paxos, medium)
             instance.current_quorum = quorum
             instance.current_proposal = proposal
             instance.current_ballot_number = ballot_number
             return instance
     
-        def test_ballot_has_not_been_initiated(self, instance, quorum, paxos):
+        def test_ballot_has_not_been_initiated(self, instance, quorum, paxos,
+                                               ballot_number, proposal, mock):
             paxos.ballot_has_been_initiated_before = False
+            instance.create_begin_ballot = mock
             instance.send_begin_ballot()
             assert paxos.log_begin_ballot.called
+            paxos.log_begin_ballot.assert_called_with(instance, ballot_number)
             assert quorum.send_to_quorum.called
-            assert quorum.send_to_quorum.return_value == intance.current_voting_quorum
+            quorum.send_to_quorum.assert_called_with(mock.return_value)
+            assert quorum.send_to_quorum.return_value == instance.current_voting_quorum
 
-        def test_ballot_has_been_initiated_before(self):
+        def test_call_create_begin_ballot(self, instance, proposal,
+                                          ballot_number):
+            begin_ballot = instance.create_begin_ballot()
+            assert begin_ballot.ballot_number == ballot_number
+            assert begin_ballot.value == proposal
+
+        def test_ballot_has_been_initiated_before(self, instance, paxos, quorum):
             paxos.ballot_has_been_initiated_before = True
             instance.send_begin_ballot()
             assert paxos.log_begin_ballot.called
