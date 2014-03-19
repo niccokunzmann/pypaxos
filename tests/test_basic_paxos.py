@@ -110,13 +110,25 @@ class TestStep_2(TestInstance):
         next_ballot = Mock()
         next_ballot.ballot_number = ballot_number
         return next_ballot
-    message = mock
-
-    def test_receive_next_ballot(self, instance, next_ballot, message, mock):
-        instance.send_last_vote = mock
+    @fixture()
+    def message(self, next_ballot):
+        message = Mock()
         message.content = next_ballot
+        return message
+
+    def test_receive_next_ballot(self, paxos, instance, next_ballot, message, mock, ballot_number):
+        instance.send_last_vote = mock
+        paxos.log_promise.return_value = True
         instance.receive_next_ballot(next_ballot, message)
+        paxos.log_promise.assert_called_with(instance, ballot_number)
         assert instance.send_last_vote.called
+
+    def test_do_not_violate_promise(self, paxos, instance, next_ballot, message, mock, ballot_number):
+        instance.send_last_vote = mock
+        paxos.log_promise.return_value = False
+        instance.receive_next_ballot(next_ballot, message)
+        paxos.log_promise.assert_called_with(instance, ballot_number)
+        assert not instance.send_last_vote.called
 
     def test_send_last_vote(self, instance, next_ballot, message, mock):
         instance.create_last_vote = mock
@@ -129,13 +141,14 @@ class TestStep_2(TestInstance):
         assert last_vote.last_vote.ballot_number < last_vote.ballot_number
         assert last_vote.last_vote == instance.last_vote
 
-    def test_violate_promise(self):
+
+class TestLog:
+    def test_promise(self):
+        # test_receive_next_ballot
         fail("todo")
 
-    def test_log_the_value(self):
-        fail("todo")
-
-    def test_rely_on_logs(self):
+    def test_begin_ballot(self):
+        # TestSendBeginBallot
         fail("todo")
         
 class TestStep_3(TestInstance):

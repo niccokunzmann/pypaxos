@@ -65,8 +65,8 @@ class Instance:
         return NextBallot(self.current_ballot_number)
 
     def receive_next_ballot(self, next_ballot, message):
-        # todo: violate promise
-        self.send_last_vote(next_ballot.ballot_number, message)
+        if self.paxos.log_promise(self, next_ballot.ballot_number):
+            self.send_last_vote(next_ballot.ballot_number, message)
 
     def send_last_vote(self, ballot_number, message):
         message.reply(self.create_last_vote(ballot_number))
