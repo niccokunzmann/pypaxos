@@ -21,11 +21,17 @@ mock1 = mock2 = mock
 
 class TestInstance:
 
-    message = paxos = medium = mock
+    message = medium = mock
 
     @fixture()
-    def instance(self, paxos, medium):
-        return Instance(paxos, medium)
+    def instance(self, log, medium):
+        return Instance(log, medium)
+
+    @fixture()
+    def log(self):
+        log = Mock()
+        log.get_last_vote.return_value = NullVote()
+        return log
 
 class TestBallotNumber(TestInstance):
 
@@ -52,11 +58,11 @@ class TestBallotNumber(TestInstance):
         assert greater_ballot_number2 > greater_ballot_number
         
 
-class TestInstanceAttributes(TestInstance):
-
-    def test_name_of_instance_is_name_of_paxos(self, instance, paxos):
-        """This is no requirement but it helps tracking the values"""
-        assert paxos.name == instance.name
+##class TestInstanceAttributes(TestInstance):
+##
+##    def test_name_of_instance_is_name_of_log(self, instance, log):
+##        """This is no requirement but it helps tracking the values"""
+##        assert log.name == instance.name
 
 class TestStep_1(TestInstance):
     """ page 11
@@ -116,18 +122,18 @@ class TestStep_2(TestInstance):
         message.content = next_ballot
         return message
 
-    def test_receive_next_ballot(self, paxos, instance, next_ballot, message, mock, ballot_number):
+    def test_receive_next_ballot(self, log, instance, next_ballot, message, mock, ballot_number):
         instance.send_last_vote = mock
-        paxos.log_promise.return_value = True
+        log.log_promise.return_value = True
         instance.receive_next_ballot(next_ballot, message)
-        paxos.log_promise.assert_called_with(instance, ballot_number)
+        log.log_promise.assert_called_with(instance, ballot_number)
         assert instance.send_last_vote.called
 
-    def test_do_not_violate_promise(self, paxos, instance, next_ballot, message, mock, ballot_number):
+    def test_do_not_violate_promise(self, log, instance, next_ballot, message, mock, ballot_number):
         instance.send_last_vote = mock
-        paxos.log_promise.return_value = False
+        log.log_promise.return_value = False
         instance.receive_next_ballot(next_ballot, message)
-        paxos.log_promise.assert_called_with(instance, ballot_number)
+        log.log_promise.assert_called_with(instance, ballot_number)
         assert not instance.send_last_vote.called
 
     def test_send_last_vote(self, instance, next_ballot, message, mock):
@@ -135,11 +141,12 @@ class TestStep_2(TestInstance):
         instance.send_last_vote(next_ballot.ballot_number, message)
         message.reply.assert_called_with(mock.return_value)
 
-    def test_create_last_vote(self, instance, ballot_number):
+    def test_create_last_vote(self, instance, ballot_number, log):
         last_vote = instance.create_last_vote(ballot_number)
         assert last_vote.ballot_number == ballot_number
         assert last_vote.last_vote.ballot_number < last_vote.ballot_number
-        assert last_vote.last_vote == instance.last_vote
+        log.get_last_vote.assert_called_with(instance, ballot_number)
+        assert last_vote.last_vote == log.get_last_vote.return_value
 
 
 class TestLog:
@@ -162,6 +169,7 @@ class TestStep_3(TestInstance):
 
 
     class TestQuorumReaction(TestInstance):
+        """Test whether send_bgin_ballot is called depending on the quorum"""
         
         @fixture()
         def last_vote(self):
@@ -176,8 +184,8 @@ class TestStep_3(TestInstance):
             return message
 
         @fixture()
-        def instance(self, quorum, last_vote, paxos, medium):
-            instance = TestInstance.instance(self, paxos, medium)
+        def instance(self, quorum, last_vote, log, medium):
+            instance = TestInstance.instance(self, log, medium)
             instance.send_begin_ballot = Mock()
             instance.current_quorum = quorum
             instance.current_ballot_number = last_vote.ballot_number
@@ -241,8 +249,8 @@ class TestStep_3(TestInstance):
             return "proposal"
 
         @fixture()
-        def instance(self, paxos, medium, proposal):
-            instance = TestInstance.instance(self, paxos, medium)
+        def instance(self, log, medium, proposal):
+            instance = TestInstance.instance(self, log, medium)
             instance.current_proposal = proposal
             return instance
 
@@ -338,31 +346,31 @@ class TestStep_3(TestInstance):
             return quorum
 
         @fixture()
-        def paxos(self, ballot_number, quorum):
-            paxos = Mock()
-            def log(*args):
+        def log(self, ballot_number, quorum):
+            log = Mock()
+            def log_begin_ballot(*args):
                 # Todo: test logs that they return True and false for
                 #       log_begin_ballot
                 assert not quorum.send_to_quorum.called
-                return paxos.ballot_has_been_initiated_before
-            paxos.log_begin_ballot.side_effect = log
-            return paxos
+                return log.ballot_has_been_initiated_before
+            log.log_begin_ballot.side_effect = log_begin_ballot
+            return log
 
         @fixture()
-        def instance(self, paxos, medium, quorum, proposal, ballot_number):
-            instance = TestInstance.instance(self, paxos, medium)
+        def instance(self, log, medium, quorum, proposal, ballot_number):
+            instance = TestInstance.instance(self, log, medium)
             instance.current_quorum = quorum
             instance.current_proposal = proposal
             instance.current_ballot_number = ballot_number
             return instance
     
-        def test_ballot_has_not_been_initiated(self, instance, quorum, paxos,
+        def test_ballot_has_not_been_initiated(self, instance, quorum, log,
                                                ballot_number, proposal, mock):
-            paxos.ballot_has_been_initiated_before = False
+            log.ballot_has_been_initiated_before = False
             instance.create_begin_ballot = mock
             instance.send_begin_ballot()
-            assert paxos.log_begin_ballot.called
-            paxos.log_begin_ballot.assert_called_with(instance, ballot_number)
+            assert log.log_begin_ballot.called
+            log.log_begin_ballot.assert_called_with(instance, ballot_number)
             assert quorum.send_to_quorum.called
             quorum.send_to_quorum.assert_called_with(mock.return_value)
             assert quorum.send_to_quorum.return_value == instance.current_voting_quorum
@@ -373,10 +381,10 @@ class TestStep_3(TestInstance):
             assert begin_ballot.ballot_number == ballot_number
             assert begin_ballot.value == proposal
 
-        def test_ballot_has_been_initiated_before(self, instance, paxos, quorum):
-            paxos.ballot_has_been_initiated_before = True
+        def test_ballot_has_been_initiated_before(self, instance, log, quorum):
+            log.ballot_has_been_initiated_before = True
             instance.send_begin_ballot()
-            assert paxos.log_begin_ballot.called
+            assert log.log_begin_ballot.called
             assert not quorum.send_to_quorum.called
 
     def test_send_begin_ballot_if_proposal_number_is_increased(self):
@@ -396,14 +404,10 @@ class TestStep_4(TestInstance):
         `LastVote(b', v')` he has sent for some other ballot.) If q decides to
         vote for ballot number b, then he sends a `Voted(b, q)` message to p
         and records the vote in the back of his ledger.
-    """
-    
-    def test_no_votes_cast(self, instance):
-        """ page 11
+    page 11
         Priest q must use notes in the back of his ledger to remember what
         votes he had previously cast.
-        """
-        assert instance.last_vote.is_null_vote()
+    """
 
 class TestStep_5(TestInstance):
     pass

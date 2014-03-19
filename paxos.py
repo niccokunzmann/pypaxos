@@ -4,8 +4,10 @@
 def BallotNumber(*args):
     return args
 
+FIRST_BALLOT_NUMBER = BallotNumber(0)
+
 class NullVote:
-    ballot_number = BallotNumber(0)
+    ballot_number = FIRST_BALLOT_NUMBER
     @staticmethod
     def is_null_vote():
         return True
@@ -34,17 +36,18 @@ class BeginBallot:
 
 class Instance:
     
-    def __init__(self, paxos, medium):
-        self.paxos = paxos
-        self.name = paxos.name
+    def __init__(self, log, medium):
+        self.log = log
         self.medium = medium
-        self.last_vote = NullVote()
+        self.name = 0
+        # seems like this class only contains information about the
+        # current proposal that should be decided
         self.current_ballot_number = None
         self.current_quorum = None
         self.current_proposal = None
         self.current_proposals_greatest_ballot_number = None
         self.proposal_is_accpeted = True
-        self.last_ballot_number = self.last_vote.ballot_number
+        self.last_ballot_number = FIRST_BALLOT_NUMBER
         
     def next_ballot_number(self):
         return self.greater_ballot_number(self.last_ballot_number)
@@ -65,14 +68,15 @@ class Instance:
         return NextBallot(self.current_ballot_number)
 
     def receive_next_ballot(self, next_ballot, message):
-        if self.paxos.log_promise(self, next_ballot.ballot_number):
+        if self.log.log_promise(self, next_ballot.ballot_number):
             self.send_last_vote(next_ballot.ballot_number, message)
 
     def send_last_vote(self, ballot_number, message):
         message.reply(self.create_last_vote(ballot_number))
 
     def create_last_vote(self, ballot_number):
-        return LastVote(ballot_number, self.last_vote)
+        last_vote = self.log.get_last_vote(self, ballot_number)
+        return LastVote(ballot_number, last_vote)
 
     def receive_last_vote(self, last_vote, message):
         if last_vote.ballot_number == self.current_ballot_number:
@@ -99,7 +103,7 @@ class Instance:
 
     def send_begin_ballot(self):
         assert self.current_quorum.is_complete()
-        if not self.paxos.log_begin_ballot(self, self.current_ballot_number):
+        if not self.log.log_begin_ballot(self, self.current_ballot_number):
             begin_ballot = self.create_begin_ballot()
             voting_quorum = self.current_quorum.send_to_quorum(begin_ballot)
             self.current_voting_quorum = voting_quorum
