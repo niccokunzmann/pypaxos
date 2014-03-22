@@ -34,6 +34,9 @@ class BeginBallot:
         self.ballot_number = ballot_number
         self.value = value
 
+    def sent_to(self, instance, *args):
+        instance.receive_begin_ballot(self, *args)
+
 class Instance:
     
     def __init__(self, log, medium):

@@ -92,7 +92,7 @@ class TestStep_1(TestInstance):
 
         def test_sent_to(self, next_ballot, mock, mock1):
             next_ballot.sent_to(mock, mock1)
-            assert mock.receive_next_ballot.call_args[0] == (next_ballot, mock1)
+            mock.receive_next_ballot.assert_called_with(next_ballot, mock1)
 
 
 class TestStep_2(TestInstance):
@@ -408,6 +408,17 @@ class TestStep_4(TestInstance):
         Priest q must use notes in the back of his ledger to remember what
         votes he had previously cast.
     """
+
+    
+    class TestBeginBallot:
+        value = mock
+        @fixture
+        def begin_ballot(self, value):
+            return BeginBallot((1, "hello"), value)
+
+        def test_sent_to(self, begin_ballot, mock, mock1):
+            begin_ballot.sent_to(mock, mock1)
+            mock.receive_begin_ballot.assert_called_with(begin_ballot, mock1)
 
 class TestStep_5(TestInstance):
     pass
