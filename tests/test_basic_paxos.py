@@ -420,6 +420,47 @@ class TestStep_4(TestInstance):
             begin_ballot.sent_to(mock, mock1)
             mock.receive_begin_ballot.assert_called_with(begin_ballot, mock1)
 
+
+    @fixture()
+    def ballot_number(self):
+        return BallotNumber(15, "holadrio")
+
+    @fixture()
+    def begin_ballot(self, ballot_number):
+        begin_ballot = Mock()
+        begin_ballot.ballot_number = ballot_number
+        return ballot_number
+
+    @fixture()
+    def message(self, begin_ballot):
+        message = Mock()
+        message.content = begin_ballot
+        return message
+    
+    def test_begin_ballot_does_not_send_voted(self, instance, begin_ballot, mock, message, log):
+        instance.send_voted = mock
+        log.try_voting_for.return_value = False
+        instance.receive_begin_ballot(begin_ballot, message)
+        log.try_voting_for.assert_called_with(instance, ballot_number, begin_ballot.value)
+        assert not instance.send_voted.called
+
+    def test_begin_ballot_sends_voted(self, instance, begin_ballot, mock, message, log):
+        instance.send_voted = mock
+        log.try_voting_for.return_value = True
+        instance.receive_begin_ballot(begin_ballot, message)
+        log.try_voting_for.assert_called_with(instance, ballot_number, begin_ballot.value)
+        instance.send_voted.assert_called_with(ballot_number, message)
+
+    def test_sending_voted_creates_voted(self, instance, mock, ballot_number, message):
+        instance.create_voted = mock
+        instance.send_voted(ballot_number, message)
+        message.reply.assert_called_with(instance.create_voted.return_value)
+        instance.create_voted.assert_called_with(ballot_number)
+
+    def test_create_voted_message(self, instance, ballot_number):
+        voted = instance.create_voted(ballot_number)
+        assert voted.ballot_number == ballot_number
+        
 class TestStep_5(TestInstance):
     pass
 
