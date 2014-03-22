@@ -216,6 +216,10 @@ class TestStep_3(TestInstance):
                 instance.receive_last_vote(message.content, message)
             assert not instance.send_begin_ballot.called
 
+    def test_if_there_is_no_quorum(self, instance, message, mock):
+        assert instance.current_quorum is None
+        with raises(IgnoredMessage):
+            instance.receive_last_vote(voted, message)
 
     @fixture()
     def last_vote(self):
@@ -461,12 +465,15 @@ class TestStep_5(TestInstance):
     (5) If p has received a `Voted(b, q)` message from every priest q in Q
         (the quorum for ballot number b). the he writes d (the decree of that
         ballot) in his ledger and sends a `Success(d)` message to every priest.
+
+    We do not write the decree in our ledger because the priest sends the success
+    message also to himself.
     """
 
     class TestVoted:
-        value = mock
+        
         @fixture()
-        def voted(self, value):
+        def voted(self):
             return Voted((1, "hello"))
 
         def test_sent_to(self, voted, mock, mock1):
@@ -529,7 +536,41 @@ class TestStep_5(TestInstance):
         instance.current_ballot_number = ballot_number
         instance.current_proposal = Mock()
         success = instance.create_success()
-        assert success.ballot_number = instance.current_ballot_number
         assert success.value = instance.current_proposal
+
+    def test_if_there_is_no_quorum(self, instance, message, mock):
+        assert instance.current_voting_quorum is None
+        with raises(IgnoredMessage):
+            instance.receive_voted(voted, message)
         
         
+class TestStep_6(TestInstance):
+    """page 12
+    (6) Upon receiving a `Success(d)` message, a priest enters decree d in his ledger.
+
+    A priest sends the success message also to itself.
+    """
+    
+    class TestSuccess:
+        value = mock
+        
+        @fixture()
+        def success(self, value):
+            return Success(value)
+
+        def test_sent_to(self, success, mock, mock1):
+            success.sent_to(mock, mock1)
+            mock.receive_success.assert_called_with(success, mock1)
+
+    success = mock
+
+    @fixture()
+    def message(self, success):
+        message = Mock()
+        message.content = success
+        return message
+
+    def test_receive_success(self, instance, success, message, log):
+        instance.receive_success(success, message)
+        log.log_success.assert_called_with(instance, success.value)
+
