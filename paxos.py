@@ -37,6 +37,12 @@ class BeginBallot:
     def sent_to(self, instance, *args):
         instance.receive_begin_ballot(self, *args)
 
+
+class Voted:
+    def __init__(self, ballot_number):
+        self.ballot_number = ballot_number
+    
+
 class Instance:
     
     def __init__(self, log, medium):
@@ -111,3 +117,16 @@ class Instance:
             voting_quorum = self.current_quorum.send_to_quorum(begin_ballot)
             self.current_voting_quorum = voting_quorum
 
+    def receive_begin_ballot(self, begin_ballot, message):
+        ballot_number = begin_ballot.ballot_number
+        if self.log.try_voting_for(self, ballot_number, begin_ballot.value):
+            self.send_voted(ballot_number, message)
+
+    def send_voted(self, ballot_number, message):
+        voted = self.create_voted(ballot_number)
+        message.reply(voted)
+
+    def create_voted(self, ballot_number):
+        return Voted(ballot_number)
+        
+        
