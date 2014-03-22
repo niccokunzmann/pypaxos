@@ -51,7 +51,11 @@ class Instance:
         self.medium = medium
         self.name = 0
         # seems like this class only contains information about the
-        # current proposal that should be decided
+        # current proposal that should be voted upon
+        # we do not put this information into the log because loosing it will
+        # stop the proposing and consistency is garuanteed. If we loose this
+        # information then this process is dead and restarting it, there
+        # is already a new leader
         self.current_ballot_number = None
         self.current_quorum = None
         self.current_proposal = None
