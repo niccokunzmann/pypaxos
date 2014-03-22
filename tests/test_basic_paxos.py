@@ -86,7 +86,7 @@ class TestStep_1(TestInstance):
         assert next_ballot.ballot_number == instance.current_ballot_number
 
     class TestNextBallot:
-        @fixture
+        @fixture()
         def next_ballot(self):
             return NextBallot((1, "hello"))
 
@@ -401,7 +401,7 @@ class TestStep_4(TestInstance):
     
     class TestBeginBallot:
         value = mock
-        @fixture
+        @fixture()
         def begin_ballot(self, value):
             return BeginBallot((1, "hello"), value)
 
@@ -426,21 +426,26 @@ class TestStep_4(TestInstance):
         message.content = begin_ballot
         return message
     
-    def test_begin_ballot_does_not_send_voted(self, instance, begin_ballot, mock, message, log, ballot_number):
+    def test_begin_ballot_does_not_send_voted(self, instance, begin_ballot,
+                                              mock, message, log, ballot_number):
         instance.send_voted = mock
         log.try_voting_for.return_value = False
         instance.receive_begin_ballot(begin_ballot, message)
-        log.try_voting_for.assert_called_with(instance, ballot_number, begin_ballot.value)
+        log.try_voting_for.assert_called_with(instance, ballot_number,
+                                              begin_ballot.value)
         assert not instance.send_voted.called
 
-    def test_begin_ballot_sends_voted(self, instance, begin_ballot, mock, message, log, ballot_number):
+    def test_begin_ballot_sends_voted(self, instance, begin_ballot, mock,
+                                      message, log, ballot_number):
         instance.send_voted = mock
         log.try_voting_for.return_value = True
         instance.receive_begin_ballot(begin_ballot, message)
-        log.try_voting_for.assert_called_with(instance, ballot_number, begin_ballot.value)
+        log.try_voting_for.assert_called_with(instance, ballot_number,
+                                              begin_ballot.value)
         instance.send_voted.assert_called_with(ballot_number, message)
 
-    def test_sending_voted_creates_voted(self, instance, mock, ballot_number, message):
+    def test_sending_voted_creates_voted(self, instance, mock, ballot_number,
+                                         message):
         instance.create_voted = mock
         instance.send_voted(ballot_number, message)
         message.reply.assert_called_with(instance.create_voted.return_value)
@@ -449,11 +454,82 @@ class TestStep_4(TestInstance):
     def test_create_voted_message(self, instance, ballot_number):
         voted = instance.create_voted(ballot_number)
         assert voted.ballot_number == ballot_number
+        assert voted.name == instance.name
         
 class TestStep_5(TestInstance):
-    pass
+    """ page 12
+    (5) If p has received a `Voted(b, q)` message from every priest q in Q
+        (the quorum for ballot number b). the he writes d (the decree of that
+        ballot) in his ledger and sends a `Success(d)` message to every priest.
+    """
 
+    class TestVoted:
+        value = mock
+        @fixture()
+        def voted(self, value):
+            return Voted((1, "hello"))
 
+        def test_sent_to(self, voted, mock, mock1):
+            voted.sent_to(mock, mock1)
+            mock.receive_voted.assert_called_with(voted, mock1)
 
+    class TestReceiveVoted(TestInstance):
 
+        quorum = mock
 
+        ballot_number = fixture()(lambda self: BallotNumber(2, "test"))
+
+        @fixture()
+        def voted(self, ballot_number):
+            voted = Mock()
+            voted.ballot_number = ballot_number
+            return last_vote
+
+        @fixture()
+        def message(self, last_vote):
+            message = Mock()
+            message.content = last_vote
+            return message
+
+        @fixture()
+        def instance(self, log, medium, quorum, ballot_number):
+            instance = TestInstance.instance(self, log, medium)
+            instance.current_ballot_number = ballot_number
+            instance.current_voting_quorum = quorum
+            instance.send_success = Mock()
+            return instance
+
+        def test_receiving_a_last_vote_adds_the_sender_to_the_quorum(
+                self, instance, message, voted, quorum):
+            quorum.is_complete.return_value = False
+            instance.receive_voted(voted, message)
+            quorum.add_success.assert_called_with(message)
+            assert not instance.send_success.called
+
+        def test_completing_the_vote(self, instance, message, voted, quorum):
+            quorum.is_complete.return_value = True
+            instance.receive_voted(voted, message)
+            quorum.add_success.assert_called_with(message)
+            assert instance.send_success.called
+
+        def test_voted_with_differing_ballot_number(self, instance, message, voted):
+            voted.ballot_number = BallotNumber(213, "no!")
+            instance.receive_voted(voted, message)
+            assert not quorum.add_success.called
+            assert not instance.send_success.called
+
+    ballot_number = fixture()(lambda self: BallotNumber(33, "success!"))
+
+    def test_send_success(self, instance, medium):
+        instance.create_success = Mock()
+        instance.send_success()
+        medium.send_to_all.assert_called_with(instance.create_success.return_value)
+
+    def test_create_success(self, instance, ballot_number):
+        instance.current_ballot_number = ballot_number
+        instance.current_proposal = Mock()
+        success = instance.create_success()
+        assert success.ballot_number = instance.current_ballot_number
+        assert success.value = instance.current_proposal
+        
+        

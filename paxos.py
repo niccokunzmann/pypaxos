@@ -39,6 +39,7 @@ class BeginBallot:
 
 
 class Voted:
+    name = None
     def __init__(self, ballot_number):
         self.ballot_number = ballot_number
     
