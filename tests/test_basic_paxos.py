@@ -149,15 +149,6 @@ class TestStep_2(TestInstance):
         assert last_vote.last_vote == log.get_last_vote.return_value
 
 
-class TestLog:
-    def test_promise(self):
-        # test_receive_next_ballot
-        fail("todo")
-
-    def test_begin_ballot(self):
-        # TestSendBeginBallot
-        fail("todo")
-        
 class TestStep_3(TestInstance):
     """ page 11
     (3) After receiving a `LastVote(b, v)` from every priest in some
@@ -349,8 +340,6 @@ class TestStep_3(TestInstance):
         def log(self, ballot_number, quorum):
             log = Mock()
             def log_begin_ballot(*args):
-                # Todo: test logs that they return True and false for
-                #       log_begin_ballot
                 assert not quorum.send_to_quorum.called
                 return log.ballot_has_been_initiated_before
             log.log_begin_ballot.side_effect = log_begin_ballot
@@ -429,7 +418,7 @@ class TestStep_4(TestInstance):
     def begin_ballot(self, ballot_number):
         begin_ballot = Mock()
         begin_ballot.ballot_number = ballot_number
-        return ballot_number
+        return begin_ballot
 
     @fixture()
     def message(self, begin_ballot):
@@ -437,14 +426,14 @@ class TestStep_4(TestInstance):
         message.content = begin_ballot
         return message
     
-    def test_begin_ballot_does_not_send_voted(self, instance, begin_ballot, mock, message, log):
+    def test_begin_ballot_does_not_send_voted(self, instance, begin_ballot, mock, message, log, ballot_number):
         instance.send_voted = mock
         log.try_voting_for.return_value = False
         instance.receive_begin_ballot(begin_ballot, message)
         log.try_voting_for.assert_called_with(instance, ballot_number, begin_ballot.value)
         assert not instance.send_voted.called
 
-    def test_begin_ballot_sends_voted(self, instance, begin_ballot, mock, message, log):
+    def test_begin_ballot_sends_voted(self, instance, begin_ballot, mock, message, log, ballot_number):
         instance.send_voted = mock
         log.try_voting_for.return_value = True
         instance.receive_begin_ballot(begin_ballot, message)
