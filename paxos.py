@@ -42,7 +42,20 @@ class Voted:
     name = None
     def __init__(self, ballot_number):
         self.ballot_number = ballot_number
-    
+
+    def sent_to(self, instance, *args):
+        instance.receive_voted(self, *args)
+
+class Success:
+
+    def __init__(self, value):
+        self.value = value
+
+    def sent_to(self, instance, *args):
+        instance.receive_success(self, *args)
+
+class IgnoredMessage(Exception):
+    pass
 
 class Instance:
     
@@ -60,6 +73,7 @@ class Instance:
         self.current_quorum = None
         self.current_proposal = None
         self.current_proposals_greatest_ballot_number = None
+        self.current_voting_quorum = None
         self.proposal_is_accpeted = True
         self.last_ballot_number = FIRST_BALLOT_NUMBER
         
@@ -93,6 +107,8 @@ class Instance:
         return LastVote(ballot_number, last_vote)
 
     def receive_last_vote(self, last_vote, message):
+        if not self.current_quorum:
+            raise IgnoredMessage()
         if last_vote.ballot_number == self.current_ballot_number:
             self.current_quorum.add_success(message)
         self.update_proposal(last_vote.last_vote)
@@ -134,4 +150,22 @@ class Instance:
     def create_voted(self, ballot_number):
         return Voted(ballot_number)
         
-        
+    def receive_voted(self, voted, message):
+        if self.current_voting_quorum is None:
+            raise IgnoredMessage()
+        if voted.ballot_number != self.current_ballot_number:
+            return
+        self.current_voting_quorum.add_success(message)
+        if self.current_voting_quorum.is_complete():
+            self.send_success()
+
+
+    def send_success(self):
+        success = self.create_success()
+        self.medium.send_to_all(success)
+
+    def create_success(self):
+        return Success(self.current_proposal)
+
+    def receive_success(self, success, message):
+        self.log.log_success(self, success.value)

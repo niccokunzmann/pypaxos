@@ -219,7 +219,7 @@ class TestStep_3(TestInstance):
     def test_if_there_is_no_quorum(self, instance, message, mock):
         assert instance.current_quorum is None
         with raises(IgnoredMessage):
-            instance.receive_last_vote(voted, message)
+            instance.receive_last_vote(mock, message)
 
     @fixture()
     def last_vote(self):
@@ -458,7 +458,6 @@ class TestStep_4(TestInstance):
     def test_create_voted_message(self, instance, ballot_number):
         voted = instance.create_voted(ballot_number)
         assert voted.ballot_number == ballot_number
-        assert voted.name == instance.name
         
 class TestStep_5(TestInstance):
     """ page 12
@@ -490,12 +489,12 @@ class TestStep_5(TestInstance):
         def voted(self, ballot_number):
             voted = Mock()
             voted.ballot_number = ballot_number
-            return last_vote
+            return voted
 
         @fixture()
-        def message(self, last_vote):
+        def message(self, voted):
             message = Mock()
-            message.content = last_vote
+            message.content = voted
             return message
 
         @fixture()
@@ -519,11 +518,16 @@ class TestStep_5(TestInstance):
             quorum.add_success.assert_called_with(message)
             assert instance.send_success.called
 
-        def test_voted_with_differing_ballot_number(self, instance, message, voted):
+        def test_voted_with_differing_ballot_number(self, instance, message, voted, quorum):
             voted.ballot_number = BallotNumber(213, "no!")
             instance.receive_voted(voted, message)
             assert not quorum.add_success.called
             assert not instance.send_success.called
+
+    def test_if_there_is_no_quorum(self, instance, message, mock):
+        assert instance.current_voting_quorum is None
+        with raises(IgnoredMessage):
+            instance.receive_voted(mock, message)
 
     ballot_number = fixture()(lambda self: BallotNumber(33, "success!"))
 
@@ -536,12 +540,8 @@ class TestStep_5(TestInstance):
         instance.current_ballot_number = ballot_number
         instance.current_proposal = Mock()
         success = instance.create_success()
-        assert success.value = instance.current_proposal
+        assert success.value == instance.current_proposal
 
-    def test_if_there_is_no_quorum(self, instance, message, mock):
-        assert instance.current_voting_quorum is None
-        with raises(IgnoredMessage):
-            instance.receive_voted(voted, message)
         
         
 class TestStep_6(TestInstance):
