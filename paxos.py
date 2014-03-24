@@ -1,8 +1,14 @@
 
 
 
-def BallotNumber(*args):
-    return args
+def BallotNumber(time, name = ''):
+    if not isinstance(time, int):
+        raise TypeError("type of first argument time {} must be " \
+                        "int and not {}".format(time, type(time)))
+    if not isinstance(name, str):
+        raise TypeError("type of second argument name {} must be " \
+                        "str and not {}".format(name, type(name)))
+    return time, name
 
 FIRST_BALLOT_NUMBER = BallotNumber(0)
 
@@ -57,6 +63,9 @@ class Success:
 class IgnoredMessage(Exception):
     pass
 
+class NoValueDeterminedError(Exception):
+    pass
+
 class Instance:
     """ page 13
     Priest p keeps all information about the progress of ballot number `lastTried[p]` on
@@ -69,7 +78,7 @@ class Instance:
     def __init__(self, log, medium):
         self.log = log
         self.medium = medium
-        self.name = 0
+        self.name = ""
         self.last_ballot_number = FIRST_BALLOT_NUMBER
         # seems like this class only contains information about the
         # current proposal that should be voted upon
@@ -176,3 +185,13 @@ class Instance:
 
     def receive_success(self, success, message):
         self.log.log_success(self, success.value)
+
+    @property
+    def has_final_value(self):
+        return self.log.has_success(self)
+
+    @property
+    def final_value(self):
+        if not self.has_final_value:
+            raise NoValueDeterminedError()
+        return self.log.get_success(self)

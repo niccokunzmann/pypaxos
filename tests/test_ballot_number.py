@@ -61,15 +61,15 @@ def test_smallest_ballot_number():
     assert FIRST_BALLOT_NUMBER == BallotNumber(0, "")
 
 class TestArguments:
-    def test_int_and_string():
+    def test_int_and_string(self):
         BallotNumber(1, "")
 
-    def test_int_int_is_invalid():
+    def test_int_int_is_invalid(self):
         with raises(TypeError):
             BallotNumber(1, 1)
-    def test_str_int_is_invalid():
+    def test_str_int_is_invalid(self):
         with raises(TypeError):
             BallotNumber("", 1)
-    def test_str_str_is_invalid():
+    def test_str_str_is_invalid(self):
         with raises(TypeError):
             BallotNumber("", "")
