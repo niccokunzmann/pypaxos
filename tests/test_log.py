@@ -108,9 +108,14 @@ class TestUnpersistentLog:
         # test_begin_ballot_does_not_send_voted
         # attribute try_voting_for in combination with log_promise
 
+        @fixture()
+        def log(self, ballot_number, instance):
+            log = super(self).log()
+            assert log.log_promise(instance, ballot_number)
+            return log
+
         def test_can_vote_for_promised_ballot_number(self, log, ballot_number, instance):
-            log.log_promise(instance, ballot_number)
-            assert log.try_voting_for(instance, ballot_number)
+            assert log.try_voting_for(instance, ballot_number, "value")
 
         def test_can_not_vote_for_higher_ballot_number(self, log, ballot_number, instance,
                                                        higher_ballot_number):
@@ -119,17 +124,65 @@ class TestUnpersistentLog:
                 page 11
                 After receiving a `LastVote(b, v)` message from every priest in some majority
                 set Q, priest p initiates a new ballot with [...] quorum Q, [...]."""
-            log.log_promise(instance, ballot_number)
             with raises(Exception):
-                log.try_voting_for(instance, higher_ballot_number)
+                log.try_voting_for(instance, higher_ballot_number, "value")
             
         def test_can_not_vote_for_lower_ballot_number(self, log, ballot_number, instance,
                                                        lower_ballot_number):
-            log.log_promise(instance, ballot_number)
-            assert not log.try_voting_for(instance, lower_ballot_number)
+            assert not log.try_voting_for(instance, lower_ballot_number, "value")
 
-    # attribute get_last_vote
+        # attribute get_last_vote
 
-    def test_get_last_vote(self):
-        fail("todo")
+        def test_nullvote_if_nothing_is_voted_before(self, instance, log):
+            assert log.get_last_vote(instance) == NullVote()
+
+        def test_update_last_vote(self, log, instance, ballot_number):
+            log.try_voting_for(instance, ballot_number, "the value")
+            voted = log.get_last_vote(instance)
+            assert voted.proposal == "the value"
+            assert voted.ballot_number == ballot_number
+
+        def test_voting_twice_changes_the_last_vote(self, instance, log, ballot_number,
+                                                    higher_ballot_number):
+            log.try_voting_for(instance, ballot_number, "old value")
+            log.log_promise(instance, higher_ballot_number)
+            log.try_voting_for(instance, higher_ballot_number, "new value")
+            voted = log.get_last_vote(instance)
+            assert voted.proposal == "new value"
+            assert voted.ballot_number == higher_ballot_number
+
+        def test_try_voting_for_lower_ballot_number_does_not_change_the_last_vote(
+                self, instance, ballot_number, lower_ballot_number):
+            log.try_voting_for(instance, ballot_number, "recent value")
+            log.log_promise(instance, lower_ballot_number)
+            log.try_voting_for(instance, lower_ballot_number, "other value")
+            voted = log.get_last_vote(instance)
+            assert voted.proposal == "recent value"
+            assert voted.ballot_number == ballot_number
+
+        # assert:   get_last_vote can not be greater than the last promise given
+        #           This should be an assertion in the code
+            
+    class TestSuccess(LogTest):
+
+        #assert:    The success value may never change
+
+        def test_the_success_value_may_never_change(self, instance, log):
+            log.log_success(instance, "success!")
+            log.log_success(instance, "success!")
+            with raises(Exception):
+                log.log_success(instance, "other value")
+
+        def test_get_success_after_logged(self, instance, log):
+            log.log_success(instance, "success!")
+            assert log.has_success(instance)
+            assert log.get_success(instance) == "success!"
+
+        def test_not_success_yet(self, log, instance):
+            assert not log.has_success(instance)
+            with raises(Exception):
+                log.get_success(instance)
+            
+            
+            
  
