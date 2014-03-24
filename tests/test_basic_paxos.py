@@ -385,6 +385,9 @@ class TestStep_3(TestInstance):
         # see test_quorum_can_not_complete
         fail("todo")
 
+    def test_proposal_does_not_change_once_a_ballot_is_initiated(self):
+        fail("todo")
+
     def test_reaction_when_it_is_clear_that_there_will_be_no_majority(self):
         fail("todo")
         
@@ -458,7 +461,7 @@ class TestStep_4(TestInstance):
     def test_create_voted_message(self, instance, ballot_number):
         voted = instance.create_voted(ballot_number)
         assert voted.ballot_number == ballot_number
-        
+
 class TestStep_5(TestInstance):
     """ page 12
     (5) If p has received a `Voted(b, q)` message from every priest q in Q
