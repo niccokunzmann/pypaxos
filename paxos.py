@@ -58,24 +58,31 @@ class IgnoredMessage(Exception):
     pass
 
 class Instance:
+    """ page 13
+    Priest p keeps all information about the progress of ballot number `lastTried[p]` on
+    a slip of paper. If he loses that slip of paper, then he stops conducting the ballot.
+
+    Instances of this class are the slip of paper. Everything that should be persistent
+    is in the log. When this process crashes, then this slip of paper is gone.
+    """
     
     def __init__(self, log, medium):
         self.log = log
         self.medium = medium
         self.name = 0
+        self.last_ballot_number = FIRST_BALLOT_NUMBER
         # seems like this class only contains information about the
         # current proposal that should be voted upon
         # we do not put this information into the log because loosing it will
         # stop the proposing and consistency is garuanteed. If we loose this
         # information then this process is dead and restarting it, there
-        # is already a new leader
-        self.current_ballot_number = None
+        # is already a new leader. See the comment of the class.
+        self.current_ballot_number = None # lastTried[p]
         self.current_quorum = None
         self.current_proposal = None
         self.current_proposals_greatest_ballot_number = None
         self.current_voting_quorum = None
         self.proposal_is_accpeted = True
-        self.last_ballot_number = FIRST_BALLOT_NUMBER
         
     def next_ballot_number(self):
         return self.greater_ballot_number(self.last_ballot_number)

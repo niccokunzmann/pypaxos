@@ -58,7 +58,7 @@ class TestBallotNumberComparism:
         assert not p1 > p2
 
 def test_smallest_ballot_number():
-    assert BallotNumber.smallest_ballot_number == BallotNumber(1, "")
+    assert FIRST_BALLOT_NUMBER == BallotNumber(0, "")
 
 class TestArguments:
     def test_int_and_string():
