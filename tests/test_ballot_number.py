@@ -27,7 +27,7 @@ def greater():
     for p1, p2 in lower():
         yield p2, p1
 
-class TestBallotNumbers:
+class TestBallotNumberComparism:
 
     @itertest(equal)
     def test_equal(self, p1, p2):
@@ -57,3 +57,19 @@ class TestBallotNumbers:
         assert p1 <= p2
         assert not p1 > p2
 
+def test_smallest_ballot_number():
+    assert BallotNumber.smallest_ballot_number == BallotNumber(1, "")
+
+class TestArguments:
+    def test_int_and_string():
+        BallotNumber(1, "")
+
+    def test_int_int_is_invalid():
+        with raises(TypeError):
+            BallotNumber(1, 1)
+    def test_str_int_is_invalid():
+        with raises(TypeError):
+            BallotNumber("", 1)
+    def test_str_str_is_invalid():
+        with raises(TypeError):
+            BallotNumber("", "")
