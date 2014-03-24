@@ -541,8 +541,6 @@ class TestStep_5(TestInstance):
         instance.current_proposal = Mock()
         success = instance.create_success()
         assert success.value == instance.current_proposal
-
-        
         
 class TestStep_6(TestInstance):
     """page 12
@@ -573,4 +571,17 @@ class TestStep_6(TestInstance):
     def test_receive_success(self, instance, success, message, log):
         instance.receive_success(success, message)
         log.log_success.assert_called_with(instance, success.value)
+
+    def test_has_value(self, instance, log):
+        log.has_success.return_value = True
+        final_value = instance.final_value
+        assert instance.has_final_value
+        log.get_success.assert_called_with(instance)
+        assert final_value == log.get_success.return_value
+
+    def test_has_no_final_value(self, instance, log):
+        log.has_success.return_value = False
+        assert not instance.has_final_value
+        with raises(NoValueDeterminedError):
+            instance.final_value
 
