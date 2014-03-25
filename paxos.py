@@ -1,22 +1,5 @@
-
-
-
-def BallotNumber(time, name = ''):
-    if not isinstance(time, int):
-        raise TypeError("type of first argument time {} must be " \
-                        "int and not {}".format(time, type(time)))
-    if not isinstance(name, str):
-        raise TypeError("type of second argument name {} must be " \
-                        "str and not {}".format(name, type(name)))
-    return time, name
-
-FIRST_BALLOT_NUMBER = BallotNumber(0)
-
-class NullVote:
-    ballot_number = FIRST_BALLOT_NUMBER
-    @staticmethod
-    def is_null_vote():
-        return True
+from pypaxos.ballot_number import *
+from pypaxos.vote import *
 
 class NextBallot:
 
