@@ -95,14 +95,14 @@ class Instance:
         return NextBallot(self.current_ballot_number)
 
     def receive_next_ballot(self, next_ballot, message):
-        if self.log.log_promise(self, next_ballot.ballot_number):
+        if self.log.log_promise(next_ballot.ballot_number):
             self.send_last_vote(next_ballot.ballot_number, message)
 
     def send_last_vote(self, ballot_number, message):
         message.reply(self.create_last_vote(ballot_number))
 
     def create_last_vote(self, ballot_number):
-        last_vote = self.log.get_last_vote(self, ballot_number)
+        last_vote = self.log.get_last_vote(ballot_number)
         return LastVote(ballot_number, last_vote)
 
     def receive_last_vote(self, last_vote, message):
@@ -132,14 +132,14 @@ class Instance:
 
     def send_begin_ballot(self):
         assert self.current_quorum.is_complete()
-        if not self.log.log_begin_ballot(self, self.current_ballot_number):
+        if not self.log.log_begin_ballot(self.current_ballot_number):
             begin_ballot = self.create_begin_ballot()
             voting_quorum = self.current_quorum.send_to_quorum(begin_ballot)
             self.current_voting_quorum = voting_quorum
 
     def receive_begin_ballot(self, begin_ballot, message):
         ballot_number = begin_ballot.ballot_number
-        if self.log.try_voting_for(self, ballot_number, begin_ballot.value):
+        if self.log.try_voting_for(ballot_number, begin_ballot.value):
             self.send_voted(ballot_number, message)
 
     def send_voted(self, ballot_number, message):
@@ -167,14 +167,14 @@ class Instance:
         return Success(self.current_proposal)
 
     def receive_success(self, success, message):
-        self.log.log_success(self, success.value)
+        self.log.log_success(success.value)
 
     @property
     def has_final_value(self):
-        return self.log.has_success(self)
+        return self.log.has_success()
 
     @property
     def final_value(self):
         if not self.has_final_value:
             raise NoValueDeterminedError()
-        return self.log.get_success(self)
+        return self.log.get_success()

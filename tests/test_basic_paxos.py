@@ -126,14 +126,14 @@ class TestStep_2(TestInstance):
         instance.send_last_vote = mock
         log.log_promise.return_value = True
         instance.receive_next_ballot(next_ballot, message)
-        log.log_promise.assert_called_with(instance, ballot_number)
+        log.log_promise.assert_called_with(ballot_number)
         assert instance.send_last_vote.called
 
     def test_do_not_violate_promise(self, log, instance, next_ballot, message, mock, ballot_number):
         instance.send_last_vote = mock
         log.log_promise.return_value = False
         instance.receive_next_ballot(next_ballot, message)
-        log.log_promise.assert_called_with(instance, ballot_number)
+        log.log_promise.assert_called_with(ballot_number)
         assert not instance.send_last_vote.called
 
     def test_send_last_vote(self, instance, next_ballot, message, mock):
@@ -145,7 +145,7 @@ class TestStep_2(TestInstance):
         last_vote = instance.create_last_vote(ballot_number)
         assert last_vote.ballot_number == ballot_number
         assert last_vote.last_vote.ballot_number < last_vote.ballot_number
-        log.get_last_vote.assert_called_with(instance, ballot_number)
+        log.get_last_vote.assert_called_with(ballot_number)
         assert last_vote.last_vote == log.get_last_vote.return_value
 
 
@@ -363,7 +363,7 @@ class TestStep_3(TestInstance):
             instance.create_begin_ballot = mock
             instance.send_begin_ballot()
             assert log.log_begin_ballot.called
-            log.log_begin_ballot.assert_called_with(instance, ballot_number)
+            log.log_begin_ballot.assert_called_with(ballot_number)
             assert quorum.send_to_quorum.called
             quorum.send_to_quorum.assert_called_with(mock.return_value)
             assert quorum.send_to_quorum.return_value == instance.current_voting_quorum
@@ -438,7 +438,7 @@ class TestStep_4(TestInstance):
         instance.send_voted = mock
         log.try_voting_for.return_value = False
         instance.receive_begin_ballot(begin_ballot, message)
-        log.try_voting_for.assert_called_with(instance, ballot_number,
+        log.try_voting_for.assert_called_with(ballot_number,
                                               begin_ballot.value)
         assert not instance.send_voted.called
 
@@ -447,7 +447,7 @@ class TestStep_4(TestInstance):
         instance.send_voted = mock
         log.try_voting_for.return_value = True
         instance.receive_begin_ballot(begin_ballot, message)
-        log.try_voting_for.assert_called_with(instance, ballot_number,
+        log.try_voting_for.assert_called_with(ballot_number,
                                               begin_ballot.value)
         instance.send_voted.assert_called_with(ballot_number, message)
 
@@ -573,13 +573,13 @@ class TestStep_6(TestInstance):
 
     def test_receive_success(self, instance, success, message, log):
         instance.receive_success(success, message)
-        log.log_success.assert_called_with(instance, success.value)
+        log.log_success.assert_called_with(success.value)
 
     def test_has_value(self, instance, log):
         log.has_success.return_value = True
         final_value = instance.final_value
         assert instance.has_final_value
-        log.get_success.assert_called_with(instance)
+        log.get_success.assert_called_with()
         assert final_value == log.get_success.return_value
 
     def test_has_no_final_value(self, instance, log):
