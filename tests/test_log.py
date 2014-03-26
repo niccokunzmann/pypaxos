@@ -11,7 +11,7 @@ mock1 = mock2 = mock
 def test_smallest_ballot_number():
     assert FIRST_BALLOT_NUMBER <= BallotNumber(1, "")
 
-class TestUnpersistentLog:
+class TestInstanceLog:
     """This tests the logging functionality but without any test for persistence"""
 
     class LogTest:
@@ -24,7 +24,7 @@ class TestUnpersistentLog:
 
         @fixture()
         def log(self):
-            return UnpersistentLog()
+            return InstanceLog()
 
     class TestPromise(LogTest):
         """ page 11
@@ -110,7 +110,7 @@ class TestUnpersistentLog:
             assert log.log_promise(ballot_number)
             return log
 
-        def test_can_vote_for_promised_ballot_number(self, log, ballot_number, ):
+        def test_can_vote_for_promised_ballot_number(self, log, ballot_number):
             assert log.try_voting_for(ballot_number, "value")
 
         def test_can_not_vote_for_higher_ballot_number(self, log, ballot_number,
@@ -174,10 +174,9 @@ class TestUnpersistentLog:
             assert log.has_success()
             assert log.get_success() == "success!"
 
-        def test_not_success_yet(self, log, ):
+        def test_not_success_yet(self, log):
             assert not log.has_success()
             with raises(Exception):
                 log.get_success()
-            
             
  

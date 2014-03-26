@@ -1,7 +1,7 @@
 from pypaxos.ballot_number import *
 from pypaxos.vote import *
 
-class UnpersistentLog:
+class InstanceLog:
 
     def __init__(self):
         self.last_promise = FIRST_BALLOT_NUMBER
@@ -9,10 +9,6 @@ class UnpersistentLog:
         self.last_vote = NullVote()
         self.success_set = False
         self.success = None
-
-
-    def register_(self, transaction, ):
-        pass
 
     def log_promise(self, ballot_number):
         if ballot_number <= self.last_promise:
@@ -42,7 +38,7 @@ class UnpersistentLog:
         self.success_set = True
         self.success = value
 
-    def has_success(self, ):
+    def has_success(self):
         return self.success_set
 
     def get_success(self):
