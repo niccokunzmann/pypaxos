@@ -49,6 +49,10 @@ class IgnoredMessage(Exception):
 class NoValueDeterminedError(Exception):
     pass
 
+
+# TODO: we need to use quorum.add_failure()
+#       => we need to make clear which messages require an answer
+
 class Instance:
     """ page 13
     Priest p keeps all information about the progress of ballot number `lastTried[p]` on
