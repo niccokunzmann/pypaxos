@@ -35,7 +35,7 @@ class TestQuorum:
         return MajorityQuorum(medium, endpoints)
 
 def create_majority_quorum_completeness_function(endpoint_count, failures,
-                                                 successes):
+                                                 successes, majority_size):
     error_message = "failures: {} successes {} " \
                "endpoints {} ".format(failures, successes, endpoint_count)
     def test(self, medium):
@@ -46,12 +46,12 @@ def create_majority_quorum_completeness_function(endpoint_count, failures,
             quorum.add_success(message(endpoints[i]))
         for i in range(i + 1, i + 1 + failures):
             quorum.add_failure(message(endpoints[i]))
-        if successes > int(len(endpoints) / 2):
+        if successes >= majority_size:
             assert quorum.is_complete(), error_message + "is complete"
         else:
             assert not quorum.is_complete(), error_message + \
                                              "is NOT complete"
-        if failures >= len(endpoints) - int(len(endpoints) / 2):
+        if failures > len(endpoints) - majority_size:
             assert not quorum.can_complete(), error_message + "can NOT complete"
         else:
             assert quorum.can_complete(), error_message + "can complete"
@@ -73,11 +73,11 @@ class TestMajorityQuorumCommpleteness(TestQuorum):
             quorum = self.quorum(medium, endpoints)
             assert quorum.majority_size == majority_size
 
-for endpoint_count in range(1, 8):
+for endpoint_count, majority_size in enumerate([1, 2, 2, 3, 3, 4, 4, 5], 1):
     for successes in range(endpoint_count + 1):
         for failures in range(endpoint_count - successes + 1):
             test = create_majority_quorum_completeness_function(
-                                    endpoint_count, failures, successes)
+                       endpoint_count, failures, successes, majority_size)
             setattr(TestMajorityQuorumCommpleteness, test.__name__, test)
 
 class TestSending(TestQuorum):
