@@ -44,7 +44,7 @@ def create_majority_quorum_completeness_function(endpoint_count, failures,
         i = 0
         for i in range(successes):
             quorum.add_success(message(endpoints[i]))
-        for i in range(i + 1, i + 1 + failures):
+        for i in range(successes, successes + failures):
             quorum.add_failure(message(endpoints[i]))
         if successes >= majority_size:
             assert quorum.is_complete(), error_message + "is complete"
@@ -73,12 +73,20 @@ class TestMajorityQuorumCommpleteness(TestQuorum):
             quorum = self.quorum(medium, endpoints)
             assert quorum.majority_size == majority_size
 
+    def test_add_success_adds_endpoint_as_successful(self, quorum, endpoints):
+        quorum.add_success(message(endpoints[0]))
+        assert endpoints[0] in quorum.successful_endpoints
+
+    def test_endpoints_are_not_successful_by_default(self, quorum, endpoints):
+        assert endpoints[0] not in quorum.successful_endpoints
+
 for endpoint_count, majority_size in enumerate([1, 2, 2, 3, 3, 4, 4, 5], 1):
     for successes in range(endpoint_count + 1):
         for failures in range(endpoint_count - successes + 1):
             test = create_majority_quorum_completeness_function(
                        endpoint_count, failures, successes, majority_size)
             setattr(TestMajorityQuorumCommpleteness, test.__name__, test)
+            del test
 
 class TestSending(TestQuorum):
 
@@ -89,7 +97,7 @@ class TestSending(TestQuorum):
     #   send_to_quorum(content) => new quorum
     #   send_to(content)
 
-    def test_sending_to_none_if_no_successes(self, quorum):
+    def test_sending_to_none_if_no_successes(self, quorum, medium):
         quorum.is_complete = Mock()
         quorum.is_complete.return_value = False
         with raises(QuorumIsNotComplete):
@@ -99,27 +107,20 @@ class TestSending(TestQuorum):
     def test_sending_to_complete_quorum(self, quorum, endpoints, mock):
         quorum.is_complete = Mock()
         quorum.is_complete.return_value = True
-        quorum.create_new_quorum = Mock()
+        quorum.create_successful_quorum = Mock()
         new_quorum = quorum.send_to_quorum("message")
-        assert quorum.create_new_quorum.return_value == new_quorum
-        new_quorum.send_to.assert_called_with("message")
+        assert quorum.create_successful_quorum.return_value == new_quorum
+        new_quorum.send_to_endpoints.assert_called_with("message")
 
     def test_new_sub_quorum(self, quorum, endpoints):
-        quorum.successful_endpoints = endpoints[1:]
-        new_quorum = quorum.create_new_quorum()
+        quorum.successful_endpoints = endpoints[:quorum.majority_size]
+        new_quorum = quorum.create_successful_quorum()
         assert not new_quorum.is_complete()
         assert new_quorum.can_complete()
         assert new_quorum.endpoints == quorum.successful_endpoints
         assert new_quorum.majority_size == quorum.majority_size
 
-    def test_add_success_adds_endpoint_as_successful(self, quorum, endpoints):
-        quorum.add_success(message(endpoints[0]))
-        assert endpoints[0] in quorum.successful_endpoints
-
-    def test_endpoints_are_not_successful_by_default(self, quorum, endpoints):
-        assert endpoints[0] not in quorum.successful_endpoints
-
-    def test_sending_to_all_members_of_the_quorum(self, quorum, endpoints):
-        quorum.send_to("message")
+    def test_sending_to_all_members_of_the_quorum(self, quorum, endpoints, medium):
+        quorum.send_to_endpoints("message")
         medium.send_to_endpoints.assert_called_with(quorum.endpoints, "message")
         
