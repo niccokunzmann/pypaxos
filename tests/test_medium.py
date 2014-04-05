@@ -81,7 +81,7 @@ class TestLocalMedium:
         medium.deliver_all_to(paxos2)
         assert paxos.receive.call_args_list == []
 
-    def test_send_to_endpoints(self, medium, paxos, paxos3):
+    def test_send_to_endpoints(self, medium, paxos, paxos2, paxos3):
         medium.send_to_endpoints(medium.address_of(paxos),
                                  [medium.address_of(paxos),
                                   medium.address_of(paxos3)],
@@ -90,6 +90,14 @@ class TestLocalMedium:
         assert paxos.receive.called
         assert paxos3.receive.called
         assert not paxos2.receive.called
+
+    def test_got_endpoints_are_addresses(self, medium, paxos,
+                                         paxos2, paxos3):
+        addresses = medium.get_endpoint_addresses()
+        assert len(addresses) == 3
+        assert medium.address_of(paxos) in addresses
+        assert medium.address_of(paxos2) in addresses
+        assert medium.address_of(paxos3) in addresses
         
 
 class TestLocalEndpoint:
@@ -117,7 +125,7 @@ class TestLocalEndpoint:
         quorum.send_to_endpoints.assert_called_with("Hi!")
 
     def test_create_quorum(self, endpoint, medium):
-        medium.endpoints = [1,2,3]
+        medium.get_endpoint_addresses.return_value = [1,2,3]
         quorum = endpoint.create_quorum()
         assert quorum.endpoints == [1,2,3]
         assert quorum.number_of_endpoints == 3
