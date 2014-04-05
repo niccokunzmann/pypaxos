@@ -3,6 +3,8 @@ from unittest.mock import Mock
 
 from pypaxos.medium import *
 
+mock = fixture()(lambda: Mock())
+
 class TestLocalMedium:
     """tests for the medium to use for the tests. It is a local medium."""
 
@@ -100,35 +102,49 @@ class TestLocalMedium:
         assert medium.address_of(paxos3) in addresses
         
 
-class TestLocalEndpoint:
+class TestEndpoint:
 
-    @fixture()
-    def medium(self):
-        return Mock()
+    class EndpointTest:
 
-    @fixture()
-    def address(self):
-        return 5
+        @fixture()
+        def medium(self):
+            return Mock()
 
-    @fixture()
-    def endpoint(self, medium, address):
-        return Endpoint(medium, address)
+        @fixture()
+        def address(self):
+            return 5
 
-    def test_send_to_all(self, endpoint, medium, address):
-        endpoint.send_to_all("hallo")
-        medium.send_to_all.assert_called_with(address, "hallo")
+        @fixture()
+        def endpoint(self, medium, address):
+            return Endpoint(medium, address)
 
-    def test_send_to_quorum(self, endpoint):
-        endpoint.create_quorum = Mock()
-        quorum = endpoint.send_to_quorum("Hi!")
-        assert quorum == endpoint.create_quorum.return_value
-        quorum.send_to_endpoints.assert_called_with("Hi!")
+    class TestSending(EndpointTest):
 
-    def test_create_quorum(self, endpoint, medium):
-        medium.get_endpoint_addresses.return_value = [1,2,3]
-        quorum = endpoint.create_quorum()
-        assert quorum.endpoints == [1,2,3]
-        assert quorum.number_of_endpoints == 3
+        def test_to_all(self, endpoint, medium, address):
+            endpoint.send_to_all("hallo")
+            medium.send_to_all.assert_called_with(address, "hallo")
+
+        def test_to_quorum(self, endpoint):
+            endpoint.create_quorum = Mock()
+            quorum = endpoint.send_to_quorum("Hi!")
+            assert quorum == endpoint.create_quorum.return_value
+            quorum.send_to_endpoints.assert_called_with("Hi!")
+
+        def test_create_quorum(self, endpoint, medium):
+            medium.get_endpoint_addresses.return_value = [1,2,3]
+            quorum = endpoint.create_quorum()
+            assert quorum.endpoints == [1,2,3]
+            assert quorum.number_of_endpoints == 3
+
+    class TestReceiving(EndpointTest):
+
+        def test_endpoint_can_register_for_receiving(self, endpoint, mock):
+            endpoint.register_receiver(mock)
+            endpoint.receive("message")
+            mock.receive.assert_called_with("message")
+
+        def test_receive_if_nobody_listens(self, endpoint):
+            endpoint.receive("message")
 
 if __name__ == '__main__':
     main()

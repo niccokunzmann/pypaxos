@@ -9,6 +9,9 @@ class NextBallot:
     def sent_to(self, instance, *args):
         instance.receive_next_ballot(self, *args)
 
+    def __str__(self):
+        return '<{} NextBallot>'.format(self.ballot_number)
+
 class LastVote:
     
     def __init__(self, ballot_number, last_vote):
@@ -17,6 +20,9 @@ class LastVote:
 
     def sent_to(self, instance, *args):
         instance.receive_last_vote(self, *args)
+
+    def __str__(self):
+        return '<{} LastVote {}>'.format(self.ballot_number, self.last_vote)
 
 class BeginBallot:
     def __init__(self, ballot_number, value):
@@ -91,7 +97,7 @@ class Instance:
 
     def propose(self, value):
         self.current_proposal = value
-        next_ballot = self.create_next_ballot(value)
+        next_ballot = self.create_next_ballot()
         self.current_quorum = self.medium.send_to_quorum(next_ballot)
 
     def create_next_ballot(self):
@@ -106,7 +112,7 @@ class Instance:
         message.reply(self.create_last_vote(ballot_number))
 
     def create_last_vote(self, ballot_number):
-        last_vote = self.log.get_last_vote(ballot_number)
+        last_vote = self.log.get_last_vote()
         return LastVote(ballot_number, last_vote)
 
     def receive_last_vote(self, last_vote, message):
@@ -115,6 +121,7 @@ class Instance:
         if last_vote.ballot_number == self.current_ballot_number:
             self.current_quorum.add_success(message)
         self.update_proposal(last_vote.last_vote)
+##        print(self.current_quorum, self.current_quorum.is_complete(), self.current_quorum.can_complete())
         complete = self.current_quorum.is_complete()
         if complete and not self.current_quorum.can_complete():
             raise ValueError("The quorum {} is complete but can not complete."
@@ -136,7 +143,9 @@ class Instance:
 
     def send_begin_ballot(self):
         assert self.current_quorum.is_complete()
-        if not self.log.log_begin_ballot(self.current_ballot_number):
+        log = self.log.log_begin_ballot(self.current_ballot_number)
+        print('log', log)
+        if log:
             begin_ballot = self.create_begin_ballot()
             voting_quorum = self.current_quorum.send_to_quorum(begin_ballot)
             self.current_voting_quorum = voting_quorum
@@ -182,3 +191,6 @@ class Instance:
         if not self.has_final_value:
             raise NoValueDeterminedError()
         return self.log.get_success()
+
+    def receive(self, message):
+        message.content.sent_to(self, message)

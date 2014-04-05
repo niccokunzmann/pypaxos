@@ -11,8 +11,10 @@ class Message:
         self.medium._send_message(reply)
 
     def __repr__(self):
-        return "<{} from: {} to: {}>".format(self.__class__.__name__,
-                                             self.source, self.destination)
+        return "<{} from: {} to: {} with: {}>".format(self.__class__.__name__,
+                                                      self.source,
+                                                      self.destination,
+                                                      self.content)
 
 class LocalMedium:
 
@@ -38,10 +40,10 @@ class LocalMedium:
 
     def address_of(self, endpoint):
         """for endpoints => the address identifier for an endpoint"""
-        return self.endpoints.index(endpoint)
+        return self.endpoints.index(endpoint) + 1
 
     def endpoint_of(self, address):
-        return self.endpoints[address]
+        return self.endpoints[address - 1]
 
     def deliver_all_from(self, endpoint):
         """shall only be called by test code"""
@@ -70,15 +72,26 @@ class LocalMedium:
         for destination_address in destination_addresses:
             self._send_message(Message(self, source_address,
                                        destination_address,
-                                       message_content))        
+                                       message_content))
+
+    def new_endpoint(self):
+        address = len(self.endpoints) + 1
+        endpoint = Endpoint(self, address)
+        self.add_endpoints([endpoint])
+        assert self.address_of(endpoint) == address
+        return endpoint
 
 class Endpoint:
     def __init__(self, medium, address):
         self.medium = medium
         self.address = address
+        self.receivers = []
 
     def send_to_all(self, content):
         self.medium.send_to_all(self.address, content)
+
+    def send_to_endpoints(self, endpoints, content):
+        self.medium.send_to_endpoints(self.address, endpoints, content)
 
     def send_to_quorum(self, content):
         quorum = self.create_quorum()
@@ -89,3 +102,16 @@ class Endpoint:
         import pypaxos.quorum
         return pypaxos.quorum.MajorityQuorum(self,
                    self.medium.get_endpoint_addresses())
+
+    # observer pattern
+    
+    def register_receiver(self, receiver):
+        self.receivers.append(receiver)
+
+    def unregister_receiver(self, receiver):
+        self.receivers.remove(receiver)
+
+    def receive(self, message):
+        print(message)
+        for receiver in self.receivers:
+            receiver.receive(message)

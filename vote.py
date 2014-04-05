@@ -13,6 +13,9 @@ class NullVote:
     def __hash__(self):
         return hash(self.ballot_number)
 
+    def __str__(self):
+        return 'NullVote'
+
 class Vote:
 
     def __init__(self, ballot_number, proposal):

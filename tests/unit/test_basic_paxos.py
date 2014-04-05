@@ -145,7 +145,7 @@ class TestStep_2(TestInstance):
         last_vote = instance.create_last_vote(ballot_number)
         assert last_vote.ballot_number == ballot_number
         assert last_vote.last_vote.ballot_number < last_vote.ballot_number
-        log.get_last_vote.assert_called_with(ballot_number)
+        assert log.get_last_vote.called
         assert last_vote.last_vote == log.get_last_vote.return_value
 
 
@@ -345,7 +345,7 @@ class TestStep_3(TestInstance):
             log = Mock()
             def log_begin_ballot(*args):
                 assert not quorum.send_to_quorum.called
-                return log.ballot_has_been_initiated_before
+                return log.ballot_has_not_been_initiated_before
             log.log_begin_ballot.side_effect = log_begin_ballot
             return log
 
@@ -359,7 +359,7 @@ class TestStep_3(TestInstance):
     
         def test_ballot_has_not_been_initiated(self, instance, quorum, log,
                                                ballot_number, proposal, mock):
-            log.ballot_has_been_initiated_before = False
+            log.ballot_has_not_been_initiated_before = True
             instance.create_begin_ballot = mock
             instance.send_begin_ballot()
             assert log.log_begin_ballot.called
@@ -375,7 +375,7 @@ class TestStep_3(TestInstance):
             assert begin_ballot.value == proposal
 
         def test_ballot_has_been_initiated_before(self, instance, log, quorum):
-            log.ballot_has_been_initiated_before = True
+            log.ballot_has_not_been_initiated_before = False
             instance.send_begin_ballot()
             assert log.log_begin_ballot.called
             assert not quorum.send_to_quorum.called
