@@ -121,7 +121,6 @@ class Instance:
         if last_vote.ballot_number == self.current_ballot_number:
             self.current_quorum.add_success(message)
         self.update_proposal(last_vote.last_vote)
-##        print(self.current_quorum, self.current_quorum.is_complete(), self.current_quorum.can_complete())
         complete = self.current_quorum.is_complete()
         if complete and not self.current_quorum.can_complete():
             raise ValueError("The quorum {} is complete but can not complete."
@@ -144,7 +143,6 @@ class Instance:
     def send_begin_ballot(self):
         assert self.current_quorum.is_complete()
         log = self.log.log_begin_ballot(self.current_ballot_number)
-        print('log', log)
         if log:
             begin_ballot = self.create_begin_ballot()
             voting_quorum = self.current_quorum.send_to_quorum(begin_ballot)
