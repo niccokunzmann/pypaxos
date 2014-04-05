@@ -11,12 +11,14 @@ class InstanceLog:
         self.success = None
 
     def log_promise(self, ballot_number):
+        """True <=> can send a promise"""
         if ballot_number <= self.last_promise:
             return False
         self.last_promise = ballot_number
         return True
 
     def log_begin_ballot(self, ballot_number):
+        """True <=> can initiate a ballot"""
         assert ballot_number == self.last_promise
         if ballot_number <= self.last_ballot:
             return False
@@ -24,6 +26,7 @@ class InstanceLog:
         return True
 
     def try_voting_for(self, ballot_number, value):
+        """True <=> can vote for value"""
         if ballot_number < self.last_promise:
             return False
         assert ballot_number == self.last_promise
