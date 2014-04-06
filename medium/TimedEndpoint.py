@@ -1,13 +1,5 @@
 from pypaxos.medium.Endpoint import Endpoint
-
-a1 = 1.0
-a2 = 2.
-while a1 != a2:
-    a1, a2 = a2, a2*a2
-
-NEVER = a1
-
-del a1, a2
+from pypaxos.medium import NEVER
 
 class TimedEndpoint(Endpoint):
 
@@ -23,5 +15,4 @@ class TimedEndpoint(Endpoint):
             return 0
         return self.connection_delay.get(endpoint, NEVER)
 
-
-        
+__all__ = ['TimedEndpoint']

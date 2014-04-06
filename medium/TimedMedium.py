@@ -1,7 +1,8 @@
 import heapq
 
 from pypaxos.medium.LocalMedium import LocalMedium
-from pypaxos.medium.TimedEndpoint import TimedEndpoint, NEVER
+from pypaxos.medium.TimedEndpoint import TimedEndpoint
+from pypaxos.medium import NEVER
 
 class TimedMedium(LocalMedium):
     def __init__(self):
@@ -38,3 +39,5 @@ class TimedMedium(LocalMedium):
         if arrival_time == NEVER: return
         self._time = message.arrival_time
         endpoint.receive(message)
+
+__all__ = ['TimedMedium']

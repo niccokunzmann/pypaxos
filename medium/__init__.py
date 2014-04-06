@@ -19,4 +19,11 @@ def TimedEndpoint(*args, **kw):
     from pypaxos.medium.TimedEndpoint import TimedEndpoint
     return TimedEndpoint(*args, **kw)
 
-    
+# compute infinity of floats
+
+a1 = 1.0
+a2 = 2.
+while a1 != a2:
+    a1, a2 = a2, a2*a2
+NEVER = a1
+del a1, a2
