@@ -100,6 +100,20 @@ class TestLocalMedium:
         assert medium.address_of(paxos) in addresses
         assert medium.address_of(paxos2) in addresses
         assert medium.address_of(paxos3) in addresses
+
+class TestEndpointCreation:
+
+    @fixture()
+    def medium(self):
+        return LocalMedium()
+
+    def test_can_not_add_endpoint_after_delivering_a_message(self, medium, mock):
+        endpoint = medium.new_endpoint()
+        medium.deliver_to(mock, endpoint)
+        with raises(Exception):
+            endpoint = medium.new_endpoint()
+        
+        
         
 
 class TestEndpoint:

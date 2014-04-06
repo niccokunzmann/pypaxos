@@ -21,12 +21,14 @@ class LocalMedium:
     def __init__(self):
         self.endpoints = []
         self.messages = []
+        self.delivered_messages = False
 
     def _send_message(self, message):
         self.messages.append(message)
 
     def add_endpoints(self, endpoints):
         """shall only be called by test code"""
+        assert not self.delivered_messages
         self.endpoints.extend(endpoints)
 
     def send_to_all(self, source_address, message_content):
@@ -51,21 +53,26 @@ class LocalMedium:
         for message in self.messages:
             if message.source == source_address:
                 endpoint = self.endpoint_of(message.destination)
-                endpoint.receive(message)
-        
+                self.deliver_to(message, endpoint)
+    
     def deliver_all_to(self, endpoint):
         """shall only be called by test code"""
         source_address = self.address_of(endpoint)
         for message in self.messages:
             if source_address == message.destination:
-                endpoint.receive(message)
+                self.deliver_to(message, endpoint)
 
     def deliver_all(self):
         """delivers messages until there is nothing more to deliver"""
         while self.messages:
             message = self.messages.pop()
             endpoint = self.endpoint_of(message.destination)
-            endpoint.receive(message)
+            self.deliver_to(message, endpoint)
+
+    def deliver_to(self, message, endpoint):
+        """deliver a message to an endpoint"""
+        self.delivered_messages = True
+        endpoint.receive(message)
 
     def send_to_endpoints(self, source_address, destination_addresses,
                           message_content):
