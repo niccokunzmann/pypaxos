@@ -113,9 +113,6 @@ class TestEndpointCreation:
         with raises(Exception):
             endpoint = medium.new_endpoint()
         
-        
-        
-
 class TestEndpoint:
 
     class EndpointTest:

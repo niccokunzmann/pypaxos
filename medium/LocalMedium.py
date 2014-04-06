@@ -1,20 +1,5 @@
-
-class Message:
-    def __init__(self, medium, source, destination, content):
-        self.medium = medium
-        self.source = source
-        self.content = content
-        self.destination = destination
-
-    def reply(self, content):
-        reply = Message(self.medium, self.destination, self.source, content)
-        self.medium._send_message(reply)
-
-    def __repr__(self):
-        return "<{} from: {} to: {} with: {}>".format(self.__class__.__name__,
-                                                      self.source,
-                                                      self.destination,
-                                                      self.content)
+from pypaxos.medium.Message import Message
+from pypaxos.medium.Endpoint import Endpoint
 
 class LocalMedium:
 
@@ -25,6 +10,9 @@ class LocalMedium:
 
     def _send_message(self, message):
         self.messages.append(message)
+
+    def pop_message(self):
+        return self.messages.pop()
 
     def add_endpoints(self, endpoints):
         """shall only be called by test code"""
@@ -65,7 +53,7 @@ class LocalMedium:
     def deliver_all(self):
         """delivers messages until there is nothing more to deliver"""
         while self.messages:
-            message = self.messages.pop()
+            message = self.pop_message()
             endpoint = self.endpoint_of(message.destination)
             self.deliver_to(message, endpoint)
 
@@ -77,57 +65,21 @@ class LocalMedium:
     def send_to_endpoints(self, source_address, destination_addresses,
                           message_content):
         for destination_address in destination_addresses:
-            self._send_message(Message(self, source_address,
-                                       destination_address,
-                                       message_content))
+            message = self._create_message(source_address, destination_address,
+                                            message_content)
+            self._send_message(message)
+            
+    def _create_message(self, *args):
+        return Message(self, *args)
+
+    def _create_endpoint(self, address):
+        return Endpoint(self, address)
 
     def new_endpoint(self):
         address = len(self.endpoints) + 1
-        endpoint = Endpoint(self, address)
+        endpoint = self._create_endpoint(address)
         self.add_endpoints([endpoint])
         assert self.address_of(endpoint) == address
         return endpoint
 
-class Endpoint:
-    def __init__(self, medium, address):
-        self.medium = medium
-        self.address = address
-        self.receivers = []
-        self.enabled = True
-
-    def send_to_all(self, content):
-        self.medium.send_to_all(self.address, content)
-
-    def send_to_endpoints(self, endpoints, content):
-        self.medium.send_to_endpoints(self.address, endpoints, content)
-
-    def send_to_quorum(self, content):
-        quorum = self.create_quorum()
-        quorum.send_to_endpoints(content)
-        return quorum
-
-    def create_quorum(self):
-        import pypaxos.quorum
-        return pypaxos.quorum.MajorityQuorum(self,
-                   self.medium.get_endpoint_addresses())
-
-    # observer pattern
-    
-    def register_receiver(self, receiver):
-        self.receivers.append(receiver)
-
-    def unregister_receiver(self, receiver):
-        self.receivers.remove(receiver)
-
-    def receive(self, message):
-        if not self.enabled:
-            return 
-        print(message)
-        for receiver in self.receivers:
-            receiver.receive(message)
-
-    def enable(self):
-        self.enabled = True
-
-    def disable(self):
-        self.enabled = False
+__all__ = ['LocalMedium']
