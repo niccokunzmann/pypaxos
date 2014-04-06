@@ -86,6 +86,7 @@ class Endpoint:
         self.medium = medium
         self.address = address
         self.receivers = []
+        self.enabled = True
 
     def send_to_all(self, content):
         self.medium.send_to_all(self.address, content)
@@ -112,6 +113,14 @@ class Endpoint:
         self.receivers.remove(receiver)
 
     def receive(self, message):
+        if not self.enabled:
+            return 
         print(message)
         for receiver in self.receivers:
             receiver.receive(message)
+
+    def enable(self):
+        self.enabled = True
+
+    def disable(self):
+        self.enabled = False
