@@ -1,0 +1,2 @@
+class MediumError(Exception):
+    pass

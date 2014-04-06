@@ -132,30 +132,30 @@ class TestTimedMedium:
 
     class TestDifferentDelivery(MediumTest):
         
-        def test_different_delays(self, endpoint1, endpoint2, medium):
-            endpoint1[endpoint2] = [3, 1]
-            endpoint1.send_to_endpoint(medium.address_of(endpoint2), "a")
-            endpoint1.send_to_endpoint(medium.address_of(endpoint2), "b")
-            medium.deliver_all()
-            assert len(endpoint.receive.call_args) == 2
-            assert endpoint.receive.call_args[0] == "b"
-            assert endpoint.receive.call_args[1] == "a"
-
         def test_error_if_no_delays_left(self, endpoint1, endpoint2, medium):
             endpoint1[endpoint2] = [1, 3]
             endpoint1.send_to_endpoint(medium.address_of(endpoint2), "a")
             endpoint1.send_to_endpoint(medium.address_of(endpoint2), "b")
-            with raises(Exception):
+            with raises(MediumError):
                 # a test that uses up all delays is considered incorrect
                 endpoint1.send_to_endpoint(medium.address_of(endpoint2), "c")
 
         def test_receive_copies(self, endpoint1, endpoint2, medium):
             endpoint1[endpoint2] = [(1, 2)]
             endpoint1.send_to_endpoint(medium.address_of(endpoint2), "a")
-            assert len(endpoint.receive.call_args) == 2
-            assert endpoint.receive.call_args[0] == "b"
-            assert endpoint.receive.call_args[1] == "a"
+            medium.deliver_all()
+            assert len(endpoint2.receive.call_args_list) == 2
+            assert endpoint2.receive.call_args_list[0][0][0].content == "a"
+            assert endpoint2.receive.call_args_list[1][0][0].content == "a"
         
+        def test_different_delays(self, endpoint1, endpoint2, medium):
+            endpoint1[endpoint2] = [3, 1]
+            endpoint1.send_to_endpoint(medium.address_of(endpoint2), "a")
+            endpoint1.send_to_endpoint(medium.address_of(endpoint2), "b")
+            medium.deliver_all()
+            assert len(endpoint2.receive.call_args_list) == 2
+            assert endpoint2.receive.call_args_list[0][0][0].content == "b"
+            assert endpoint2.receive.call_args_list[1][0][0].content == "a"
 
 
 

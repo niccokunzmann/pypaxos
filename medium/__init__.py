@@ -1,3 +1,4 @@
+from pypaxos.medium.errors import *
 
 def Message(*args, **kw):
     from pypaxos.medium.Message import Message

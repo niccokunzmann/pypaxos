@@ -11,8 +11,10 @@ class TimedEndpoint(Endpoint):
         self.connection_delay[endpoint] = time
 
     def __getitem__(self, endpoint):
-        if endpoint == self:
-            return 0
-        return self.connection_delay.get(endpoint, NEVER)
+        if endpoint not in self.connection_delay:
+            if endpoint == self:
+                return 0
+            return NEVER
+        return self.connection_delay.get(endpoint, 0)
 
 __all__ = ['TimedEndpoint']
