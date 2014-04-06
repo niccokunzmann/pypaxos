@@ -14,7 +14,8 @@ class TestConsensus:
     def paxos1(self, medium):
         log = InstanceLog()
         endpoint = medium.new_endpoint()
-        instance = Instance(log, endpoint)
+        name = str(medium.address_of(endpoint))
+        instance = Instance(log, endpoint, name)
         endpoint.register_receiver(instance)
         instance.endpoint = endpoint
         return instance
@@ -44,6 +45,18 @@ class TestConsensus:
         assert paxos1.has_final_value
         assert paxos2.has_final_value
         assert not paxos3.has_final_value
+
+    def test_consistency(self, paxos1, paxos2, paxos3, medium):
+        paxos3.endpoint.disable()
+        paxos2.propose("value 1")
+        medium.deliver_all()
+        paxos3.endpoint.enable()
+        paxos1.endpoint.disable()
+        paxos3.propose("value 2")
+        paxos3.propose("value 2")
+        medium.deliver_all()
+        assert paxos3.has_final_value
+        assert paxos3.final_value == "value 1"
         
         
         

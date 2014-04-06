@@ -68,10 +68,10 @@ class Instance:
     is in the log. When this process crashes, then this slip of paper is gone.
     """
     
-    def __init__(self, log, medium):
+    def __init__(self, log, medium, name = ''):
         self.log = log
         self.medium = medium
-        self.name = ""
+        self.name = name
         self.last_ballot_number = FIRST_BALLOT_NUMBER
         # seems like this class only contains information about the
         # current proposal that should be voted upon
