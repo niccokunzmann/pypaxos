@@ -143,8 +143,22 @@ class TestEndpoint:
             endpoint.receive("message")
             mock.receive.assert_called_with("message")
 
-        def test_receive_if_nobody_listens(self, endpoint):
+        def test_nobody_listens(self, endpoint):
             endpoint.receive("message")
+
+        def test_silence_an_endpoint(self, endpoint, mock):
+            endpoint.register_receiver(mock)
+            endpoint.disable()
+            endpoint.receive("message")
+            assert not mock.receive.called
+
+        def test_enable_and_disable(self, endpoint, mock):
+            endpoint.register_receiver(mock)
+            endpoint.disable()
+            endpoint.enable()
+            endpoint.receive("message")
+            assert mock.receive.called
+            
 
 if __name__ == '__main__':
     main()
