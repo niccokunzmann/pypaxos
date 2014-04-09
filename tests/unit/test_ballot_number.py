@@ -1,5 +1,5 @@
 from pytest import *
-from pypaxos.paxos import *
+from pypaxos.ballot_number import *
 
 def itertest(*iterables):
     def wrap(function):

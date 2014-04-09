@@ -13,6 +13,8 @@ from pytest import *
 from unittest.mock import Mock
 from pypaxos.medium import *
 from pypaxos.paxos import *
+from pypaxos.ballot_number import *
+from pypaxos.vote import *
 
 @fixture()
 def mock(*args):
