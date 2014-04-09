@@ -58,6 +58,7 @@ class NoValueDeterminedError(Exception):
 
 # TODO: we need to use quorum.add_failure()
 #       => we need to make clear which messages require an answer
+# TODO: make a distinction in the roles as is done in Paxos Made Simple
 
 class Instance:
     """ page 13
