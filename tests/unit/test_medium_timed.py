@@ -161,6 +161,7 @@ class TestTimedMedium:
     class TestNotReceived(MediumTest):
 
         def test_endpoint_message_is_not_received(self, medium, endpoint1, endpoint2, mock):
+            # maybe remove this
             endpoint1[endpoint2] = -3
             endpoint1.send_to_all("failure...", on_failure = mock)
             medium.deliver_all()
@@ -170,6 +171,7 @@ class TestTimedMedium:
             assert message.content == 'failure...'
             assert message.source == medium.address_of(endpoint1)
             assert message.destination == medium.address_of(endpoint2)
+            assert not endpoint2.receive.called
 
         def test_delivery_fails_if_no_handler_is_there(self, medium, endpoint1, endpoint2):
             endpoint1[endpoint2] = -3

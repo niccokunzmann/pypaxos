@@ -85,7 +85,7 @@ class Instance:
         self.current_proposal = None
         self.current_proposals_greatest_ballot_number = None
         self.current_voting_quorum = None
-        self.proposal_is_accpeted = True
+        self.proposal_is_accpeted = None # TODO: this may be wrong
         
     def next_ballot_number(self):
         return self.greater_ballot_number(self.last_ballot_number)
@@ -97,6 +97,7 @@ class Instance:
         return self.last_ballot_number
 
     def propose(self, value):
+        self.proposal_is_accpeted = True # TODO: this may be wrong
         self.current_proposal = value
         next_ballot = self.create_next_ballot()
         self.current_quorum = self.medium.send_to_quorum(next_ballot)
