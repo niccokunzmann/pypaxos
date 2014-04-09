@@ -5,14 +5,15 @@ class Endpoint:
         self.receivers = []
         self.enabled = True
 
-    def send_to_all(self, content):
-        self.medium.send_to_all(self.address, content)
+    def send_to_all(self, content, **kw):
+        self.send_to_endpoints(self.get_endpoint_addresses(),
+                               content, **kw)
 
-    def send_to_endpoints(self, endpoints, content):
-        self.medium.send_to_endpoints(self.address, endpoints, content)
+    def send_to_endpoints(self, endpoints, content, **kw):
+        self.medium.send_to_endpoints(self.address, endpoints, content, **kw)
 
-    def send_to_endpoint(self, endpoint, content):
-        self.send_to_endpoints([endpoint], content)
+    def send_to_endpoint(self, endpoint, content, **kw):
+        self.send_to_endpoints([endpoint], content, **kw)
 
     def send_to_quorum(self, content):
         quorum = self.create_quorum()
@@ -21,8 +22,10 @@ class Endpoint:
 
     def create_quorum(self):
         import pypaxos.quorum
-        return pypaxos.quorum.MajorityQuorum(self,
-                   self.medium.get_endpoint_addresses())
+        return pypaxos.quorum.MajorityQuorum(self, self.get_endpoint_addresses())
+
+    def get_endpoint_addresses(self):
+        return self.medium.get_endpoint_addresses()
 
     # observer pattern
     

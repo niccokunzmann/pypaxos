@@ -63,14 +63,14 @@ class LocalMedium:
         endpoint.receive(message)
 
     def send_to_endpoints(self, source_address, destination_addresses,
-                          message_content):
+                          message_content, **kw):
         for destination_address in destination_addresses:
             message = self._create_message(source_address, destination_address,
-                                            message_content)
+                                            message_content, **kw)
             self._send_message(message)
             
-    def _create_message(self, *args):
-        return Message(self, *args)
+    def _create_message(self, *args, **kw):
+        return Message(self, *args, **kw)
 
     def _create_endpoint(self, address):
         return Endpoint(self, address)

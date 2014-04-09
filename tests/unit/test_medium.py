@@ -132,8 +132,10 @@ class TestEndpoint:
     class TestSending(EndpointTest):
 
         def test_to_all(self, endpoint, medium, address):
+            medium.get_endpoint_addresses.return_value = [1,2,3]
             endpoint.send_to_all("hallo")
-            medium.send_to_all.assert_called_with(address, "hallo")
+            medium.send_to_endpoints.assert_called_with(address, [1, 2, 3],
+                                                        "hallo")
 
         def test_to_quorum(self, endpoint):
             endpoint.create_quorum = Mock()
@@ -169,6 +171,7 @@ class TestEndpoint:
             endpoint.enable()
             endpoint.receive("message")
             assert mock.receive.called
+
             
 
 if __name__ == '__main__':

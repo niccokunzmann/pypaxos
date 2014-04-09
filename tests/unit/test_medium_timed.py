@@ -26,6 +26,7 @@ class TestTimedMedium:
         def endpoint1(self, medium):
             endpoint = medium.new_endpoint()
             endpoint.receive = Mock()
+            endpoint.delivery_failed = Mock()
             return endpoint
 
         endpoint2 = endpoint1
@@ -157,7 +158,21 @@ class TestTimedMedium:
             assert endpoint2.receive.call_args_list[0][0][0].content == "b"
             assert endpoint2.receive.call_args_list[1][0][0].content == "a"
 
+    class TestNotReceived(MediumTest):
 
+        def test_endpoint_message_is_not_received(self, medium, endpoint1, endpoint2, mock):
+            endpoint1[endpoint2] = -3
+            endpoint1.send_to_all("failure...", on_failure = mock)
+            medium.deliver_all()
+            assert medium.time() == 3
+            assert mock.called
+            message = mock.call_args[0][0]
+            assert message.content == 'failure...'
+            assert message.source == medium.address_of(endpoint1)
+            assert message.destination == medium.address_of(endpoint2)
 
-
-
+        def test_delivery_fails_if_no_handler_is_there(self, medium, endpoint1, endpoint2):
+            endpoint1[endpoint2] = -3
+            endpoint1.send_to_all("failure...")
+            medium.deliver_all()
+            assert not endpoint2.receive.called

@@ -38,7 +38,8 @@ class TimedMedium(LocalMedium):
 
     def _send_message_after(self, message, communication_delay):
         now = self.time()
-        arrival_time = now + communication_delay
+        message.do_not_deliver = communication_delay < 0
+        arrival_time = now + abs(communication_delay)
         if arrival_time == NEVER: return
         message.arrival_time = arrival_time
         try:
@@ -57,6 +58,9 @@ class TimedMedium(LocalMedium):
         arrival_time = message.arrival_time
         assert arrival_time >= self.time()
         self._time = message.arrival_time
-        endpoint.receive(message)
+        if message.do_not_deliver:
+            message.delivery_failed()
+        else:
+            endpoint.receive(message)
 
 __all__ = ['TimedMedium', 'MediumError']
