@@ -85,7 +85,7 @@ class Instance:
         self.current_proposal = None
         self.current_proposals_greatest_ballot_number = None
         self.current_voting_quorum = None
-        self.proposal_is_accpeted = None # TODO: this may be wrong
+        self.proposal_is_accpeted = True # TODO: this may be wrong
         
     def next_ballot_number(self):
         return self.greater_ballot_number(self.last_ballot_number)
@@ -184,6 +184,8 @@ class Instance:
 
     @property
     def has_final_value(self):
+        # TODO: There is no need to go through the whole process again.
+        #       If there is a final value we can send it.
         return self.log.has_success()
 
     @property
@@ -194,3 +196,8 @@ class Instance:
 
     def receive(self, message):
         message.content.sent_to(self, message)
+
+
+
+
+
