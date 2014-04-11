@@ -16,13 +16,22 @@ class TestPaxos:
 
         @fixture()
         def log(self):
-            return Mock()
+            log = Mock()
+            log.get_name.return_value = 'name'
+            return log
 
         @fixture()
         def paxos(self, log, medium):
             return Paxos(log, medium)
 
     class TestValues(PaxosTest):
+
+        @fixture()
+        def instance(self, paxos):
+            instance = Mock()
+            instance.has_final_value = True
+            paxos.instances[1] = instance
+            return instance
 
         @fixture()
         def paxos(self, log, medium):
@@ -42,12 +51,23 @@ class TestPaxos:
             assert instance == paxos.create_instance.return_value
             instance.propose.assert_called_with("hallo")
 
-        def test_instance_has_value(self, paxos):
-            instance = Mock()
-            instance.has_final_value = True
-            paxos.instances[1] = instance
+        def test_instance_has_value(self, paxos, instance):
             assert 1 in paxos
             assert paxos[1] == instance.final_value
+
+        def test_instance_has_no_value(self, paxos, instance):
+            instance.has_final_value = False
+            assert not 1 in paxos
+            with raises(IndexError):
+                paxos[1]
+
+        def test_same_instance_is_used(self, paxos, instance):
+            instance.has_final_value = False
+            paxos[1] = "proposal"
+            assert not paxos.create_instance.called
+            assert paxos.instances[1] == instance
+            instance.propose.assert_called_with("proposal")
+
 
     class TestInstances(PaxosTest):
 
@@ -73,13 +93,12 @@ class TestPaxos:
             log.get_instance_log.assert_called_with(number)
             assert instance.log == log.get_instance_log.return_value
 
+        def test_different_numbers_different_instances(self, paxos):
+            paxos[1] = '1'
+            paxos[2] = '2'
+            assert paxos.instances[1] != paxos.instances[2]
+
     class TestCreation(PaxosTest):
         
-        def test_name_is_random(self):
-            with patch("os.urandom"):
-                assert Paxos.create_name() == os.urandom.return_value
-
-        def test_paxos_gets_the_name_from_class(self):
-            with patch('pypaxos.paxos.paxos.Paxos.create_name'):
-                assert Paxos(Mock(), Mock()).name == Paxos.create_name.return_value
-
+        def test_name_is_from_log(self, paxos, log):
+            assert paxos.name == log.get_name()

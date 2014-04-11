@@ -1,19 +1,16 @@
 import os
 from pypaxos.paxos.instance import Instance
 
-
-
 class Paxos:
 
-    @staticmethod
-    def create_name():
-        return os.urandom(5)
-    
     def __init__(self, log, medium):
         self.instances = {}
-        self.name = self.create_name()
         self.log = log
         self.medium = medium
+
+    @property
+    def name(self):
+        return self.log.get_name()
 
     def create_instance(self, number):
         log = self.log.get_instance_log(number)
@@ -21,7 +18,8 @@ class Paxos:
         return Instance(log, medium, name = self.name)
 
     def __contains__(self, number):
-        return number in self.instances
+        return number in self.instances and \
+               self.instances[number].has_final_value
 
     def __getitem__(self, number):
         if number not in self:
@@ -31,11 +29,12 @@ class Paxos:
         return instance.final_value
 
     def __setitem__(self, number, value):
-        if number not in self:
+        if number not in self.instances:
             instance = self.create_instance(number)
             self.instances[number] = instance
-            instance.propose(value)
-        # TODO: else
+        else:
+            instance = self.instances[number]
+        instance.propose(value)
 
 
 __all__ = ['Paxos']
