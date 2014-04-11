@@ -7,6 +7,11 @@ class TestTimeLine:
 
     @fixture()
     def timeline(self):
+        import sys
+        reclimit = sys.getrecursionlimit()
+        sys.setrecursionlimit(100)
+        def fin():
+            sys.setrecursionlimit(relimit)
         return TimeLine()
 
     def test_value_at_same_point_in_time(self, timeline):
@@ -29,23 +34,23 @@ class TestTimeLine:
 
     def test_get_of_really_old_value(self, timeline):
         timeline.old[100:10000] = 100
-        assert timeline.old[10000] == 100
+        assert timeline.old[1000] == 100
 
     def test_override_value(self, timeline):
         timeline[100:1000].x = "old"
-        timeline[1000:10000].x = "new"
+        timeline[1000:100000].x = "new"
         assert timeline[100].x == "old"
         assert timeline[123].x == "old"
         assert timeline[1234].x == "new"
-        assert timeline[123400].x == "new"
+        assert timeline[12340].x == "new"
 
     def test_override_value_in_other_direction_works_too(self, timeline):
-        timeline[1000:10000].x = "new"
+        timeline[1000:100000].x = "new"
         timeline[100:1000].x = "old"
         assert timeline[100].x == "old"
         assert timeline[123].x == "old"
         assert timeline[1234].x == "new"
-        assert timeline[123400].x == "new"
+        assert timeline[12340].x == "new"
 
     def test_invalid_arguments_set(self, timeline):
         with raises(TypeError):
@@ -54,6 +59,14 @@ class TestTimeLine:
     def test_invalid_arguments_get(self, timeline):
         with raises(TypeError):
             timeline["hallo"]
+
+    def test_invalid_arguments_attribute_get(self, timeline):
+        with raises(TypeError):
+            timeline.x["hallo"]
+
+    def test_invalid_arguments_attribute_set(self, timeline):
+        with raises(TypeError):
+            timeline.x["hallo"] = 2
 
 
 class TestOverlapFreeDict:
@@ -84,6 +97,14 @@ class TestOverlapFreeDict:
         def test_can_not_get_it_not_assigned(self, dict):
             with raises(UndefinedValue):
                 dict[100]
+
+        def test_multiple(self, dict):
+            dict[10: 20] = 1
+            dict[20: 30] = 2
+            dict[30: 40] = 4
+            assert [1] * 10 == [dict [i] for i in range(10, 20)]
+            assert [2] * 10 == [dict [i] for i in range(20, 30)]
+            assert [4] * 10 == [dict [i] for i in range(30, 40)]
 
     class TestOverlap:
 

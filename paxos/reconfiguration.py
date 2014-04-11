@@ -1,6 +1,12 @@
 from bisect import bisect
 from pypaxos.paxos.errors import UndefinedValue, Overlap
 
+def check_time(time, time_type):
+    if not isinstance(time, time_type):
+        raise TypeError("Expected time {} but got {} of type {}.".format(
+                        time_type, time, type(time)))
+
+
 class PointInTime:
     _initialized = False
     
@@ -10,7 +16,13 @@ class PointInTime:
         self._initialized = True
 
     def __getattr__(self, name):
-        return self.__timeline._get_value(self.__time, name)
+        default = []
+        value = self.__timeline._get_value(self.__time, name, default)
+        if value is default:
+            raise UndefinedValue("{}.{}[{}] is not set.".format(self.__timeline,
+                                                                name,
+                                                                self.__time))
+        return value
 
     def __setattr__(self, name, value):
         if self._initialized:
@@ -25,27 +37,67 @@ class TimelessAttribute:
         self.__timeline = timeline
 
     def __getitem__(self, time):
-        return self.__timeline._get_value(time, self.__name)
+        check_time(time, int)
+        default = []
+        value = self.get(time, default)
+        if value is default:
+            raise UndefinedValue("{}.{}[{}] is not set.".format(self.__timeline,
+                                                                self.__name,
+                                                                time))
+        return value
 
     def __setitem__(self, time, value):
+        check_time(time, slice)
         self.__timeline._set_value(time, self.__name, value)
+
+    def get(self, time, default = None):
+        check_time(time, int)
+        return self.__timeline._get_value(time, self.__name, default)
+
+    def __contains__(self, time):
+        default = []
+        return default is not self.get(time, default)
+
 
 class TimeLine:
 
     def __init__(self):
-        self._values = {} # name : overlapfree array
+        self._values = {} # name : OverlapFreeDict
 
     def __getitem__(self, time):
+        check_time(time, (int, slice))
         return PointInTime(time, self)
 
     def __getattr__(self, name):
-        return TimelessAttribute(name, self)
+        def _get(self):
+            return TimelessAttribute(name, self)
+        _get.__name__ = name
+        setattr(self.__class__, name, property(_get))
+        return getattr(self, name)
 
     def _set_value(self, time, name, value):
-        pass
+        check_time(time, slice)
+        self._values.setdefault(name, OverlapFreeDict())
+        self._values[name][time] = value
 
-    def _get_value(self, time, name):
-        pass
+    def _get_value(self, time, name, default = None):
+        check_time(time, int)
+        return self._values.get(name, {}).get(time, default)
+
+
+if __name__ == '__main__':
+    t = TimeLine()
+    t.x[12:12] = 12
+    timeline = t
+    if 1:
+        timeline.x[1:100] = 100
+        timeline.x
+        assert 1 in timeline.x
+        assert timeline.x[1] == 100
+        assert timeline.x[2] == 100
+        assert timeline.x[99] == 100
+        assert not 0 in timeline.x
+        assert not 100 in timeline.x
 
 
 class OverlapFreeDict:
@@ -73,11 +125,10 @@ class OverlapFreeDict:
         start2 = self.starts[index]
         stop2 = self.values[start2][0]
         self._check_overlap2(start, stop, start2, stop2)
-        return index
+        return index + 1
 
     def _check_overlap2(self, start, stop, start2, stop2):
         # start < stop
-        print(start, stop, start2, stop2)
         if stop <= start2 or stop2 <= start:
             return
         raise Overlap(start, stop, start2, stop2)
