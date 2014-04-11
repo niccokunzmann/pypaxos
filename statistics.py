@@ -1,6 +1,9 @@
 from bisect import insort
 
 class ECDF:
+    """
+    http://en.wikipedia.org/wiki/ECDF
+    """
 
     def __init__(self, size = 100):
         self.size = size
@@ -16,10 +19,11 @@ class ECDF:
             self.values.pop(i)
             self.values.pop(-i - 1)
 
-    def inverse(self, y):
-        assert self.values
-        assert 0 <= y <= 1
-        index = int(len(self.values) * y)
-        if y == 1:
+    def inverse(self, cumulative_probability):
+        assert self.values, "there should be values"
+        assert 0 <= cumulative_probability <= 1
+        if cumulative_probability == 1:
             index = -1
+        else:
+            index = int(len(self.values) * cumulative_probability)
         return self.values[index]
