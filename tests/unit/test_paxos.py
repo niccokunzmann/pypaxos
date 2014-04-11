@@ -1,7 +1,8 @@
 from pytest import *
 from unittest.mock import Mock, patch
 
-from pypaxos.paxos import *
+from pypaxos.paxos.paxos import *
+import os
 
 mock = fixture()(lambda: Mock())
 
@@ -34,10 +35,11 @@ class TestPaxos:
             with raises(IndexError):
                 paxos[1]
 
-        def test_new_instance_created_to_choose_value(self):
+        def test_new_instance_created_to_choose_value(self, paxos):
             paxos[1] = "hallo"
             paxos.create_instance.assert_called_with(1)
-            assert paxos.instances[1] == paxos.create_instance.return_value
+            instance = paxos.instances[1]
+            assert instance == paxos.create_instance.return_value
             instance.propose.assert_called_with("hallo")
 
         def test_instance_has_value(self, paxos):
@@ -50,34 +52,34 @@ class TestPaxos:
     class TestInstances(PaxosTest):
 
         @fixture()
-        def proposal():
-            return "proposal"
+        def number(self):
+            return "number"
 
         @fixture()
-        def instance(self, paxos, proposal):
-            return paxos.create_instance(proposal)
+        def instance(self, paxos, number):
+            return paxos.create_instance(number)
 
         def test_name_is_paxos_name(self, instance, paxos):
             assert instance.name == paxos.name
 
-        def test_proposal(self, instance, proposal):
-            assert not instance.current_proposal == proposal
+        def test_proposal(self, instance, number):
+            assert not instance.current_proposal == number
 
         def test_medium(self, medium, instance):
-            assert medium.create_instance_medium.called
-            assert instance.medium == medium.create_instance_medium.return_value
+            assert medium.get_instance_medium.called
+            assert instance.medium == medium.get_instance_medium.return_value
 
-        def test_log(self, log, instance, proposal):
-            log.create_return_value.assert_called_with(proposal)
-            assert instance.log == log.create_instance_log.return_value
+        def test_log(self, log, instance, number):
+            log.get_instance_log.assert_called_with(number)
+            assert instance.log == log.get_instance_log.return_value
 
-    class CreationTest(PaxosTest):
+    class TestCreation(PaxosTest):
         
         def test_name_is_random(self):
             with patch("os.urandom"):
                 assert Paxos.create_name() == os.urandom.return_value
 
-        def test_paxos_gets_the_name_frm_class(self):
-            with patch('pypaxos.Paxos.create_name'):
-                assert Paxos().name == Paxos.create_name.return_value
+        def test_paxos_gets_the_name_from_class(self):
+            with patch('pypaxos.paxos.paxos.Paxos.create_name'):
+                assert Paxos(Mock(), Mock()).name == Paxos.create_name.return_value
 

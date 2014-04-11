@@ -1,5 +1,9 @@
 from pypaxos.paxos.errors import *
 
+def Paxos(*args, **kw):
+    import pypaxos.paxos.paxos
+    return pypaxos.paxos.paxos.Paxos(*args, **kw)
+
 def Instance(*args, **kw):
     import pypaxos.paxos.instance
     return pypaxos.paxos.instance.Instance(*args, **kw)
