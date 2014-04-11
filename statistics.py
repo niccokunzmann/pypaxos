@@ -1,3 +1,4 @@
+from bisect import insort
 
 class ECDF:
 
@@ -8,25 +9,7 @@ class ECDF:
     def add(self, number):
         if len(self.values) >= self.size:
             self.shorten()
-        self._binary_insert(number)
-
-    def _binary_insert(self, number):
-        values = self.values
-        if not values:
-            values.append(number)
-            return
-        start = 0
-        end = len(values)
-        while end - start > 1:
-            middle = (start + end) // 2
-            if number < values[middle]:
-                end = middle
-            else:
-                start = middle
-        if values[start] > number:
-            values.insert(start, number)
-        else:
-            values.insert(end, number)
+        index = insort(self.values, number)
             
     def shorten(self):
         for i in range(self.size // 4):
