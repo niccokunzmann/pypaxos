@@ -2,7 +2,6 @@ from pytest import *
 from unittest.mock import Mock, patch
 
 from pypaxos.paxos.paxos import *
-import os
 
 mock = fixture()(lambda: Mock())
 

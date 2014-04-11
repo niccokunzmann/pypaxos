@@ -1,4 +1,3 @@
-import os
 from pypaxos.paxos.instance import Instance
 
 class Paxos:

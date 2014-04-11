@@ -48,3 +48,26 @@ class InstanceLog:
         assert self.has_success()
         return self.success
         
+class MemoryLog:
+
+    def __init__(self):
+        self.instance_logs = {}
+        self.name = None
+
+    def create_name(self):
+        import os
+        return os.urandom(5)
+
+    def get_name(self):
+        if self.name is None:
+            self.name = self.create_name()
+        return self.name
+
+    def get_instance_log(self, number):
+        if number not in self.instance_logs:
+            self.instance_logs[number] = self.create_instance_log(number)
+        return self.instance_logs[number]
+
+    def create_instance_log(self, number):
+        return InstanceLog()
+        
